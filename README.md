@@ -7,6 +7,7 @@ banner da loja física, banner de cores e footer com marcas).
 ## Rodar localmente
 
 ```bash
+cd silver-tintas-next
 npm install
 npm run dev
 ```
