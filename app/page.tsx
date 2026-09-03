@@ -1,14 +1,15 @@
 "use client"
 
 import React, { useState, useEffect, useCallback, useRef } from "react"
+import { useRouter } from "next/navigation"
 import {
   Search, User, ShoppingCart, ChevronRight, ChevronLeft,
   Check, Instagram, Facebook, MessageCircle, Heart, Paintbrush, Plus, Minus,
   Calculator, Package, Truck, Star, Layers, Droplets, Brush, ChevronDown, X, Upload, Palette, Zap,
-  PaintBucket, Droplet, SprayCan, CirclePlus, Camera, Copy, Shuffle, LogOut, Lock
+  PaintBucket, Droplet, SprayCan, CirclePlus, Camera, Copy, Shuffle, LogOut, Lock,
+  Trash2, AlertCircle, RotateCcw, Home
 } from "lucide-react"
-import Login from "./Login"
-import { getSession, clearSession, SessionUser } from "./Cadastro"
+import { getSession, clearSession, SessionUser } from "@/lib/auth"
 
 // ─── TYPES ───────────────────────────────────────────────────────────────────
 
@@ -44,7 +45,6 @@ const PRODUCTS: Product[] = [
   { id: 6, name: "Primer PU Cinza 3,6L", price: 149.90, imageUrl: "https://tse3.mm.bing.net/th/id/OIP.qO6MysNn7M8jYzY2wqKz6QHaHa", category: "Impermeabilizante", brand: "Suvinil", stars: 4, coverage: 280 },
   { id: 7, name: "Verniz PU Alto Brilho 900ml", price: 59.90, imageUrl: "https://cdn.awsli.com.br/600x700/1347/1347540/produto/53873337/thinner-900ml-anjo.jpg", category: "Sprays", brand: "Natrielli", stars: 5 },
   { id: 8, name: "Esmalte Sintético Branco 3,6L", price: 89.90, imageUrl: "https://m.media-amazon.com/images/I/5156f0sCGDL._AC_SX679_.jpg", category: "Tintas", brand: "Sherwin-Williams", stars: 5, coverage: 350 },
-  // Accessories
   { id: 9, name: "Fita Crepe Profissional 48mm", price: 8.90, imageUrl: "https://m.media-amazon.com/images/I/71yh4R5VBPL._AC_SX679_.jpg", category: "Acessórios", brand: "3M", stars: 5, description: "Fita crepe para acabamentos precisos." },
   { id: 10, name: "Massa Corrida PVA 25kg", price: 89.90, imageUrl: "https://m.media-amazon.com/images/I/61b6sFNbKBL._AC_SX679_.jpg", category: "Acessórios", brand: "Suvinil", stars: 4, description: "Massa corrida para nivelamento de paredes." },
   { id: 11, name: "Bandeja para Rolo 23cm", price: 12.90, imageUrl: "https://m.media-amazon.com/images/I/51PNZjU8aRL._AC_SX679_.jpg", category: "Ferramentas para Pintura", brand: "Atlas", stars: 4, description: "Bandeja plástica reforçada." },
@@ -412,135 +412,6 @@ const KitsPage = ({ onAddKit }: { onAddKit: (name: string, price: number) => voi
   </div>
 )
 
-// ─── PAINT CALCULATOR PAGE ────────────────────────────────────────────────────
-
-const CalculatorPage = () => {
-  const [width, setWidth] = useState("")
-  const [height, setHeight] = useState("")
-  const [coats, setCoats] = useState(2)
-  const [doors, setDoors] = useState(1)
-  const [windows, setWindows] = useState(1)
-  const [coverage, setCoverage] = useState(400)
-  const [result, setResult] = useState<{ area: number; cans18L: number; cans36L: number; liters: number } | null>(null)
-
-  const calculate = () => {
-    const w = parseFloat(width)
-    const h = parseFloat(height)
-    if (!w || !h) return
-    const totalArea = w * h * 4  // 4 paredes simplificado
-    const doorArea = doors * 2.1
-    const windowArea = windows * 1.2
-    const netArea = Math.max(0, totalArea - doorArea - windowArea)
-    const liters = (netArea / coverage) * coats * 3.6  // convert to 3.6L equivalents
-    const litersTotal = (netArea / coverage) * coats
-    const cans18L = Math.ceil(litersTotal * 18 / 18)
-    const cans36L = Math.ceil(litersTotal * 18 / 3.6)
-    setResult({ area: Math.round(netArea * 10) / 10, cans18L, cans36L, liters: Math.round(litersTotal * 10) / 10 })
-  }
-
-  return (
-    <div style={{ background: "#f7f8fc", minHeight: "100vh", padding: "0 0 80px" }}>
-      <div style={{ background: "linear-gradient(135deg, #064e3b 0%, #065f46 100%)", padding: "24px 16px 20px" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6 }}>
-          <Calculator size={22} color="#34d399" />
-          <h1 style={{ fontSize: 22, fontWeight: 800, color: "white", margin: 0 }}>Calculadora de Tinta</h1>
-        </div>
-        <p style={{ fontSize: 12, color: "rgba(255,255,255,0.7)", margin: 0 }}>Calcule exatamente quanto tinta você precisa. Sem desperdício!</p>
-      </div>
-
-      <div style={{ padding: 16 }}>
-        {/* Room input */}
-        <div style={{ background: "white", borderRadius: 14, padding: 16, marginBottom: 16, boxShadow: "0 1px 8px rgba(0,0,0,0.06)" }}>
-          <h3 style={{ fontSize: 14, fontWeight: 800, color: "#1a1464", marginBottom: 14 }}>📐 Dimensões do Ambiente</h3>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 14 }}>
-            <div>
-              <label style={{ fontSize: 12, fontWeight: 600, color: "#555", display: "block", marginBottom: 6 }}>Largura (m)</label>
-              <input type="number" value={width} onChange={e => setWidth(e.target.value)} placeholder="Ex: 4.0"
-                style={{ width: "100%", border: "1px solid #d1d5db", borderRadius: 8, padding: "10px 12px", fontSize: 14, outline: "none", boxSizing: "border-box" }} />
-            </div>
-            <div>
-              <label style={{ fontSize: 12, fontWeight: 600, color: "#555", display: "block", marginBottom: 6 }}>Comprimento (m)</label>
-              <input type="number" value={height} onChange={e => setHeight(e.target.value)} placeholder="Ex: 5.0"
-                style={{ width: "100%", border: "1px solid #d1d5db", borderRadius: 8, padding: "10px 12px", fontSize: 14, outline: "none", boxSizing: "border-box" }} />
-            </div>
-          </div>
-
-          <h3 style={{ fontSize: 14, fontWeight: 800, color: "#1a1464", marginBottom: 12 }}>🪟 Descontar aberturas</h3>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 14 }}>
-            <div>
-              <label style={{ fontSize: 12, fontWeight: 600, color: "#555", display: "block", marginBottom: 6 }}>Portas</label>
-              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                <button onClick={() => setDoors(Math.max(0, doors - 1))} style={{ width: 32, height: 32, border: "1px solid #d1d5db", borderRadius: 8, background: "white", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}><Minus size={14} /></button>
-                <span style={{ fontSize: 16, fontWeight: 700, minWidth: 24, textAlign: "center" }}>{doors}</span>
-                <button onClick={() => setDoors(doors + 1)} style={{ width: 32, height: 32, border: "1px solid #d1d5db", borderRadius: 8, background: "white", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}><Plus size={14} /></button>
-              </div>
-            </div>
-            <div>
-              <label style={{ fontSize: 12, fontWeight: 600, color: "#555", display: "block", marginBottom: 6 }}>Janelas</label>
-              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                <button onClick={() => setWindows(Math.max(0, windows - 1))} style={{ width: 32, height: 32, border: "1px solid #d1d5db", borderRadius: 8, background: "white", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}><Minus size={14} /></button>
-                <span style={{ fontSize: 16, fontWeight: 700, minWidth: 24, textAlign: "center" }}>{windows}</span>
-                <button onClick={() => setWindows(windows + 1)} style={{ width: 32, height: 32, border: "1px solid #d1d5db", borderRadius: 8, background: "white", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}><Plus size={14} /></button>
-              </div>
-            </div>
-          </div>
-
-          <div style={{ marginBottom: 14 }}>
-            <label style={{ fontSize: 12, fontWeight: 600, color: "#555", display: "block", marginBottom: 6 }}>Número de demãos: <strong style={{ color: "#1a1464" }}>{coats}</strong></label>
-            <input type="range" min={1} max={3} value={coats} onChange={e => setCoats(Number(e.target.value))}
-              style={{ width: "100%", accentColor: "#1a1464" }} />
-            <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10, color: "#999" }}>
-              <span>1 demão</span><span>2 demãos (rec.)</span><span>3 demãos</span>
-            </div>
-          </div>
-
-          <div style={{ marginBottom: 16 }}>
-            <label style={{ fontSize: 12, fontWeight: 600, color: "#555", display: "block", marginBottom: 6 }}>Rendimento da tinta (m²/L)</label>
-            <select value={coverage} onChange={e => setCoverage(Number(e.target.value))}
-              style={{ width: "100%", border: "1px solid #d1d5db", borderRadius: 8, padding: "10px 12px", fontSize: 13, background: "white", outline: "none" }}>
-              <option value={280}>Baixo rendimento – 280 m²/18L</option>
-              <option value={350}>Médio rendimento – 350 m²/18L</option>
-              <option value={400}>Alto rendimento – 400 m²/18L (padrão)</option>
-              <option value={450}>Premium – 450 m²/18L</option>
-            </select>
-          </div>
-
-          <button onClick={calculate}
-            style={{ width: "100%", background: "linear-gradient(135deg, #064e3b, #065f46)", color: "white", border: "none", borderRadius: 10, padding: "14px", fontSize: 14, fontWeight: 800, cursor: "pointer" }}>
-            🧮 Calcular
-          </button>
-        </div>
-
-        {/* Result */}
-        {result && (
-          <div style={{ background: "white", borderRadius: 14, padding: 16, boxShadow: "0 1px 8px rgba(0,0,0,0.06)", border: "2px solid #059669" }}>
-            <div style={{ fontSize: 14, fontWeight: 800, color: "#059669", marginBottom: 14, display: "flex", alignItems: "center", gap: 6 }}>
-              <Check size={18} /> Resultado do cálculo
-            </div>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 14 }}>
-              {[
-                { label: "Área líquida", value: `${result.area} m²`, icon: "📐" },
-                { label: "Total de tinta", value: `${result.liters} litros`, icon: "🪣" },
-                { label: "Latas de 18L", value: `${result.cans18L} lata(s)`, icon: "📦" },
-                { label: "Galões de 3,6L", value: `${result.cans36L} galão(ões)`, icon: "🔵" },
-              ].map(item => (
-                <div key={item.label} style={{ background: "#f0fdf4", borderRadius: 10, padding: "12px 10px", textAlign: "center", border: "1px solid #86efac" }}>
-                  <div style={{ fontSize: 20, marginBottom: 4 }}>{item.icon}</div>
-                  <div style={{ fontSize: 16, fontWeight: 900, color: "#1a1464" }}>{item.value}</div>
-                  <div style={{ fontSize: 10, color: "#666", marginTop: 2 }}>{item.label}</div>
-                </div>
-              ))}
-            </div>
-            <div style={{ background: "#fffbeb", border: "1px solid #fcd34d", borderRadius: 8, padding: "10px 12px", fontSize: 11, color: "#78350f" }}>
-              💡 Recomendamos comprar 10% a mais para retoques futuros. Fórmula: Área ÷ Rendimento ÷ Nº de demãos.
-            </div>
-          </div>
-        )}
-      </div>
-    </div>
-  )
-}
-
 // ─── COLOR WHEEL ENGINE (estilo Adobe Color) ──────────────────────────────────
 
 interface Swatch { hue: number; sat: number; light: number }
@@ -850,6 +721,423 @@ const SimulatorPage = () => {
             <Copy size={13} /> {copiedIdx === -1 ? "Paleta copiada!" : "Copiar paleta (hex)"}
           </button>
         </div>
+      </div>
+    </div>
+  )
+}
+
+// ─── PAINT CALCULATOR PAGE ────────────────────────────────────────────────────
+
+interface Room {
+  id: string
+  name: string
+  width: string
+  length: string
+  wallHeight: string
+  doors: number
+  windows: number
+  paintCeiling: boolean
+}
+
+interface RoomResult {
+  id: string
+  name: string
+  wallArea: number
+  ceilingArea: number
+  netArea: number
+}
+
+interface CalcResult {
+  rooms: RoomResult[]
+  totalArea: number
+  liters: number
+  litersWithExtra: number
+  latas18Only: number
+  galoes36Only: number
+  comboLatas18: number
+  comboGaloes36: number
+  cost18Only: number | null
+  cost36Only: number | null
+  costCombo: number | null
+}
+
+const DOOR_AREA = 1.68 // 0.8m x 2.10m padrão
+const WINDOW_AREA = 1.2 // média
+
+const newRoom = (index: number): Room => ({
+  id: `${Date.now()}-${index}`,
+  name: `Ambiente ${index}`,
+  width: "",
+  length: "",
+  wallHeight: "2.8",
+  doors: 1,
+  windows: 1,
+  paintCeiling: false,
+})
+
+const CalculatorPage = () => {
+  const [rooms, setRooms] = useState<Room[]>([newRoom(1)])
+  const [coats, setCoats] = useState(2)
+  const [coverage, setCoverage] = useState(400)
+  const [buyExtra, setBuyExtra] = useState(true)
+  const [price18L, setPrice18L] = useState("")
+  const [price36L, setPrice36L] = useState("")
+  const [result, setResult] = useState<CalcResult | null>(null)
+  const [error, setError] = useState("")
+
+  const updateRoom = (id: string, patch: Partial<Room>) => {
+    setRooms(rooms.map(r => (r.id === id ? { ...r, ...patch } : r)))
+  }
+
+  const addRoom = () => {
+    setRooms([...rooms, newRoom(rooms.length + 1)])
+    setResult(null)
+  }
+
+  const removeRoom = (id: string) => {
+    if (rooms.length === 1) return
+    setRooms(rooms.filter(r => r.id !== id))
+    setResult(null)
+  }
+
+  const resetAll = () => {
+    setRooms([newRoom(1)])
+    setCoats(2)
+    setCoverage(400)
+    setBuyExtra(true)
+    setPrice18L("")
+    setPrice36L("")
+    setResult(null)
+    setError("")
+  }
+
+  const calculate = () => {
+    setError("")
+
+    for (const room of rooms) {
+      const w = parseFloat(room.width)
+      const l = parseFloat(room.length)
+      const h = parseFloat(room.wallHeight)
+      if (!w || !l || !h) {
+        setError(`Preencha largura, comprimento e pé-direito de "${room.name}".`)
+        setResult(null)
+        return
+      }
+    }
+
+    const roomResults: RoomResult[] = rooms.map(room => {
+      const w = parseFloat(room.width)
+      const l = parseFloat(room.length)
+      const h = parseFloat(room.wallHeight)
+
+      const perimeter = 2 * (w + l)
+      const grossWallArea = perimeter * h
+      const openingsArea = room.doors * DOOR_AREA + room.windows * WINDOW_AREA
+      const wallArea = Math.max(0, grossWallArea - openingsArea)
+      const ceilingArea = room.paintCeiling ? w * l : 0
+      const netArea = wallArea + ceilingArea
+
+      return {
+        id: room.id,
+        name: room.name,
+        wallArea: Math.round(wallArea * 10) / 10,
+        ceilingArea: Math.round(ceilingArea * 10) / 10,
+        netArea: Math.round(netArea * 10) / 10,
+      }
+    })
+
+    const totalArea = roomResults.reduce((sum, r) => sum + r.netArea, 0)
+    const litersRaw = (totalArea / coverage) * coats * 18 // coverage é em m² por 18L
+    const liters = Math.round(litersRaw * 10) / 10
+    const litersWithExtra = Math.round(litersRaw * 1.1 * 10) / 10
+
+    const effectiveLiters = buyExtra ? litersWithExtra : liters
+
+    const latas18Only = Math.ceil(effectiveLiters / 18)
+    const galoes36Only = Math.ceil(effectiveLiters / 3.6)
+
+    const comboLatas18 = Math.floor(effectiveLiters / 18)
+    const remaining = effectiveLiters - comboLatas18 * 18
+    const comboGaloes36 = remaining > 0.001 ? Math.ceil(remaining / 3.6) : 0
+
+    const p18 = parseFloat(price18L)
+    const p36 = parseFloat(price36L)
+
+    setResult({
+      rooms: roomResults,
+      totalArea: Math.round(totalArea * 10) / 10,
+      liters,
+      litersWithExtra,
+      latas18Only,
+      galoes36Only,
+      comboLatas18,
+      comboGaloes36,
+      cost18Only: p18 > 0 ? Math.round(latas18Only * p18 * 100) / 100 : null,
+      cost36Only: p36 > 0 ? Math.round(galoes36Only * p36 * 100) / 100 : null,
+      costCombo: p18 > 0 && p36 > 0 ? Math.round((comboLatas18 * p18 + comboGaloes36 * p36) * 100) / 100 : null,
+    })
+  }
+
+  const inputStyle: React.CSSProperties = {
+    width: "100%",
+    border: "1px solid #d1d5db",
+    borderRadius: 8,
+    padding: "10px 12px",
+    fontSize: 14,
+    outline: "none",
+    boxSizing: "border-box",
+  }
+
+  const labelStyle: React.CSSProperties = {
+    fontSize: 12,
+    fontWeight: 600,
+    color: "#555",
+    display: "block",
+    marginBottom: 6,
+  }
+
+  const stepperBtn: React.CSSProperties = {
+    width: 32,
+    height: 32,
+    border: "1px solid #d1d5db",
+    borderRadius: 8,
+    background: "white",
+    cursor: "pointer",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+  }
+
+  return (
+    <div style={{ background: "#f7f8fc", minHeight: "100vh", padding: "0 0 80px" }}>
+      <div style={{ background: "linear-gradient(135deg, #064e3b 0%, #065f46 100%)", padding: "24px 16px 20px" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6 }}>
+          <Calculator size={22} color="#34d399" />
+          <h1 style={{ fontSize: 22, fontWeight: 800, color: "white", margin: 0 }}>Calculadora de Tinta</h1>
+        </div>
+        <p style={{ fontSize: 12, color: "rgba(255,255,255,0.7)", margin: 0 }}>
+          Calcule exatamente quanto tinta você precisa, ambiente por ambiente. Sem desperdício!
+        </p>
+      </div>
+
+      <div style={{ padding: 16 }}>
+        {rooms.map((room, idx) => (
+          <div
+            key={room.id}
+            style={{ background: "white", borderRadius: 14, padding: 16, marginBottom: 16, boxShadow: "0 1px 8px rgba(0,0,0,0.06)" }}
+          >
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <Home size={16} color="#1a1464" />
+                <input
+                  value={room.name}
+                  onChange={e => updateRoom(room.id, { name: e.target.value })}
+                  style={{ fontSize: 14, fontWeight: 800, color: "#1a1464", border: "none", outline: "none", background: "transparent" }}
+                />
+              </div>
+              {rooms.length > 1 && (
+                <button
+                  onClick={() => removeRoom(room.id)}
+                  style={{ background: "none", border: "none", cursor: "pointer", color: "#dc2626", display: "flex" }}
+                  aria-label="Remover ambiente"
+                >
+                  <Trash2 size={16} />
+                </button>
+              )}
+            </div>
+
+            <h4 style={{ fontSize: 12, fontWeight: 700, color: "#888", marginBottom: 10 }}>📐 Dimensões</h4>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10, marginBottom: 14 }}>
+              <div>
+                <label style={labelStyle}>Largura (m)</label>
+                <input type="number" value={room.width} onChange={e => updateRoom(room.id, { width: e.target.value })} placeholder="Ex: 4.0" style={inputStyle} />
+              </div>
+              <div>
+                <label style={labelStyle}>Comprimento (m)</label>
+                <input type="number" value={room.length} onChange={e => updateRoom(room.id, { length: e.target.value })} placeholder="Ex: 5.0" style={inputStyle} />
+              </div>
+              <div>
+                <label style={labelStyle}>Pé-direito (m)</label>
+                <input type="number" value={room.wallHeight} onChange={e => updateRoom(room.id, { wallHeight: e.target.value })} placeholder="Ex: 2.8" style={inputStyle} />
+              </div>
+            </div>
+
+            <h4 style={{ fontSize: 12, fontWeight: 700, color: "#888", marginBottom: 10 }}>🪟 Descontar aberturas</h4>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 14 }}>
+              <div>
+                <label style={labelStyle}>Portas</label>
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <button onClick={() => updateRoom(room.id, { doors: Math.max(0, room.doors - 1) })} style={stepperBtn}><Minus size={14} /></button>
+                  <span style={{ fontSize: 16, fontWeight: 700, minWidth: 24, textAlign: "center" }}>{room.doors}</span>
+                  <button onClick={() => updateRoom(room.id, { doors: room.doors + 1 })} style={stepperBtn}><Plus size={14} /></button>
+                </div>
+              </div>
+              <div>
+                <label style={labelStyle}>Janelas</label>
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <button onClick={() => updateRoom(room.id, { windows: Math.max(0, room.windows - 1) })} style={stepperBtn}><Minus size={14} /></button>
+                  <span style={{ fontSize: 16, fontWeight: 700, minWidth: 24, textAlign: "center" }}>{room.windows}</span>
+                  <button onClick={() => updateRoom(room.id, { windows: room.windows + 1 })} style={stepperBtn}><Plus size={14} /></button>
+                </div>
+              </div>
+            </div>
+
+            <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12, fontWeight: 600, color: "#555", cursor: "pointer" }}>
+              <input type="checkbox" checked={room.paintCeiling} onChange={e => updateRoom(room.id, { paintCeiling: e.target.checked })} />
+              Pintar o teto também
+            </label>
+          </div>
+        ))}
+
+        <button
+          onClick={addRoom}
+          style={{
+            width: "100%",
+            background: "white",
+            border: "1.5px dashed #059669",
+            color: "#059669",
+            borderRadius: 10,
+            padding: "12px",
+            fontSize: 13,
+            fontWeight: 700,
+            cursor: "pointer",
+            marginBottom: 16,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: 6,
+          }}
+        >
+          <Plus size={16} /> Adicionar ambiente
+        </button>
+
+        {/* Global settings */}
+        <div style={{ background: "white", borderRadius: 14, padding: 16, marginBottom: 16, boxShadow: "0 1px 8px rgba(0,0,0,0.06)" }}>
+          <h3 style={{ fontSize: 14, fontWeight: 800, color: "#1a1464", marginBottom: 14 }}>⚙️ Configurações gerais</h3>
+
+          <div style={{ marginBottom: 14 }}>
+            <label style={labelStyle}>
+              Número de demãos: <strong style={{ color: "#1a1464" }}>{coats}</strong>
+            </label>
+            <input type="range" min={1} max={3} value={coats} onChange={e => setCoats(Number(e.target.value))} style={{ width: "100%", accentColor: "#1a1464" }} />
+            <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10, color: "#999" }}>
+              <span>1 demão</span>
+              <span>2 demãos (rec.)</span>
+              <span>3 demãos</span>
+            </div>
+          </div>
+
+          <div style={{ marginBottom: 14 }}>
+            <label style={labelStyle}>Rendimento da tinta</label>
+            <select value={coverage} onChange={e => setCoverage(Number(e.target.value))} style={{ ...inputStyle, background: "white" }}>
+              <option value={280}>Baixo rendimento – 280 m²/18L</option>
+              <option value={350}>Médio rendimento – 350 m²/18L</option>
+              <option value={400}>Alto rendimento – 400 m²/18L (padrão)</option>
+              <option value={450}>Premium – 450 m²/18L</option>
+            </select>
+          </div>
+
+          <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12, fontWeight: 600, color: "#555", cursor: "pointer", marginBottom: 14 }}>
+            <input type="checkbox" checked={buyExtra} onChange={e => setBuyExtra(e.target.checked)} />
+            Adicionar 10% de folga para retoques futuros
+          </label>
+
+          <h4 style={{ fontSize: 12, fontWeight: 700, color: "#888", marginBottom: 10 }}>💰 Preços (opcional, para estimar custo)</h4>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 16 }}>
+            <div>
+              <label style={labelStyle}>Preço lata 18L (R$)</label>
+              <input type="number" value={price18L} onChange={e => setPrice18L(e.target.value)} placeholder="Ex: 289.90" style={inputStyle} />
+            </div>
+            <div>
+              <label style={labelStyle}>Preço galão 3,6L (R$)</label>
+              <input type="number" value={price36L} onChange={e => setPrice36L(e.target.value)} placeholder="Ex: 69.90" style={inputStyle} />
+            </div>
+          </div>
+
+          {error && (
+            <div style={{ display: "flex", alignItems: "center", gap: 6, background: "#fef2f2", border: "1px solid #fca5a5", borderRadius: 8, padding: "10px 12px", fontSize: 12, color: "#991b1b", marginBottom: 14 }}>
+              <AlertCircle size={14} /> {error}
+            </div>
+          )}
+
+          <div style={{ display: "flex", gap: 10 }}>
+            <button
+              onClick={calculate}
+              style={{ flex: 1, background: "linear-gradient(135deg, #064e3b, #065f46)", color: "white", border: "none", borderRadius: 10, padding: "14px", fontSize: 14, fontWeight: 800, cursor: "pointer" }}
+            >
+              🧮 Calcular
+            </button>
+            <button
+              onClick={resetAll}
+              style={{ width: 48, background: "white", border: "1px solid #d1d5db", borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}
+              aria-label="Limpar tudo"
+            >
+              <RotateCcw size={16} color="#555" />
+            </button>
+          </div>
+        </div>
+
+        {/* Result */}
+        {result && (
+          <div style={{ background: "white", borderRadius: 14, padding: 16, boxShadow: "0 1px 8px rgba(0,0,0,0.06)", border: "2px solid #059669" }}>
+            <div style={{ fontSize: 14, fontWeight: 800, color: "#059669", marginBottom: 14, display: "flex", alignItems: "center", gap: 6 }}>
+              <Check size={18} /> Resultado do cálculo
+            </div>
+
+            {result.rooms.length > 1 && (
+              <div style={{ marginBottom: 14, borderBottom: "1px solid #eee", paddingBottom: 12 }}>
+                {result.rooms.map(r => (
+                  <div key={r.id} style={{ display: "flex", justifyContent: "space-between", fontSize: 12, color: "#555", padding: "4px 0" }}>
+                    <span>{r.name}</span>
+                    <span>{r.netArea} m²</span>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 14 }}>
+              {[
+                { label: "Área total a pintar", value: `${result.totalArea} m²`, icon: "📐" },
+                { label: "Tinta necessária", value: `${result.liters} litros`, icon: "🪣" },
+                { label: "Com 10% de folga", value: `${result.litersWithExtra} litros`, icon: "➕" },
+                { label: "Demãos", value: `${coats}x`, icon: "🖌️" },
+              ].map(item => (
+                <div key={item.label} style={{ background: "#f0fdf4", borderRadius: 10, padding: "12px 10px", textAlign: "center", border: "1px solid #86efac" }}>
+                  <div style={{ fontSize: 20, marginBottom: 4 }}>{item.icon}</div>
+                  <div style={{ fontSize: 16, fontWeight: 900, color: "#1a1464" }}>{item.value}</div>
+                  <div style={{ fontSize: 10, color: "#666", marginTop: 2 }}>{item.label}</div>
+                </div>
+              ))}
+            </div>
+
+            <h4 style={{ fontSize: 12, fontWeight: 700, color: "#888", marginBottom: 10 }}>🛒 Opções de compra</h4>
+            <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 12 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", background: "#f9fafb", borderRadius: 8, padding: "10px 12px" }}>
+                <span style={{ fontSize: 12, color: "#555" }}>Só latas de 18L</span>
+                <strong style={{ fontSize: 13, color: "#1a1464" }}>
+                  {result.latas18Only} lata(s){result.cost18Only !== null ? ` · R$ ${result.cost18Only.toFixed(2)}` : ""}
+                </strong>
+              </div>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", background: "#f9fafb", borderRadius: 8, padding: "10px 12px" }}>
+                <span style={{ fontSize: 12, color: "#555" }}>Só galões de 3,6L</span>
+                <strong style={{ fontSize: 13, color: "#1a1464" }}>
+                  {result.galoes36Only} galão(ões){result.cost36Only !== null ? ` · R$ ${result.cost36Only.toFixed(2)}` : ""}
+                </strong>
+              </div>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", background: "#ecfdf5", border: "1px solid #86efac", borderRadius: 8, padding: "10px 12px" }}>
+                <span style={{ fontSize: 12, color: "#065f46", fontWeight: 700 }}>Combinação econômica</span>
+                <strong style={{ fontSize: 13, color: "#065f46" }}>
+                  {result.comboLatas18} lata(s) 18L + {result.comboGaloes36} galão(ões) 3,6L
+                  {result.costCombo !== null ? ` · R$ ${result.costCombo.toFixed(2)}` : ""}
+                </strong>
+              </div>
+            </div>
+
+            <div style={{ background: "#fffbeb", border: "1px solid #fcd34d", borderRadius: 8, padding: "10px 12px", fontSize: 11, color: "#78350f" }}>
+              💡 Área da parede = perímetro × pé-direito, descontando portas ({DOOR_AREA} m² cada) e janelas ({WINDOW_AREA} m² cada). Litros = (área ÷ rendimento) × demãos.
+            </div>
+          </div>
+        )}
       </div>
     </div>
   )
@@ -1326,13 +1614,13 @@ const WhatsAppFAB = () => (
 // ─── APP ROOT ────────────────────────────────────────────────────────────────
 
 export default function App() {
+  const router = useRouter()
   const [page, setPage] = useState("home")
   const [cart, setCart] = useState<CartItem[]>([])
   const [cartOpen, setCartOpen] = useState(false)
   const [favorites, setFavorites] = useState<number[]>([])
   const [toast, setToast] = useState<ToastData | null>(null)
   const [user, setUser] = useState<SessionUser | null>(null)
-  const [authOpen, setAuthOpen] = useState(false)
 
   const showToast = useCallback((message: string, type: ToastData["type"] = "success") => setToast({ message, type }), [])
 
@@ -1340,12 +1628,6 @@ export default function App() {
   useEffect(() => {
     setUser(getSession())
   }, [])
-
-  const handleAuthSuccess = useCallback((u: SessionUser) => {
-    setUser(u)
-    setAuthOpen(false)
-    showToast(`Bem-vindo(a), ${u.name.split(" ")[0]}!`)
-  }, [showToast])
 
   const handleLogout = useCallback(() => {
     clearSession()
@@ -1381,12 +1663,12 @@ export default function App() {
   }, [])
 
   // Só deixa finalizar a compra se a pessoa já tiver conta/estiver logada.
-  // Sem sessão: fecha o carrinho, abre o login/cadastro e avisa por toast.
+  // Sem sessão: fecha o carrinho e manda pra página /login.
   const handleCheckout = useCallback(() => {
     if (!user) {
       setCartOpen(false)
-      setAuthOpen(true)
       showToast("Crie uma conta ou faça login para finalizar a compra", "info")
+      router.push("/login")
       return
     }
     setCartOpen(false)
@@ -1394,7 +1676,7 @@ export default function App() {
       localStorage.setItem("silver-cart", JSON.stringify(cart))
       window.location.href = "/checkout"
     }
-  }, [user, cart, showToast])
+  }, [user, cart, showToast, router])
 
   const cartCount = cart.reduce((s, i) => s + i.qty, 0)
   const goToCategory = (_cat: string) => setPage("produtos")
@@ -1402,7 +1684,7 @@ export default function App() {
   return (
     <div style={{ minHeight: "100vh", background: "#f7f8fc", fontFamily: "system-ui, -apple-system, sans-serif", width: "100%", maxWidth: 1200, margin: "0 auto" }}>
       <Header cartCount={cartCount} onCartOpen={() => setCartOpen(true)} onGoHome={() => setPage("home")} onGoCor={() => setPage("cor")} currentPage={page} setPage={setPage}
-        user={user} onOpenAuth={() => setAuthOpen(true)} onLogout={handleLogout} />
+        user={user} onOpenAuth={() => router.push("/login")} onLogout={handleLogout} />
 
       {page === "home" && (
         <>
@@ -1438,8 +1720,6 @@ export default function App() {
       )}
 
       {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
-
-      <Login isOpen={authOpen} onClose={() => setAuthOpen(false)} onSuccess={handleAuthSuccess} initialMode="login" />
     </div>
   )
 }
