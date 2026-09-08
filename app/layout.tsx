@@ -86,7 +86,7 @@ export default function RootLayout({
 }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="pt-BR" suppressHydrationWarning>
-      <body className={`${geist.variable} ${geistMono.variable} font-sans antialiased`}>
+      <body className={geist.variable + " " + geistMono.variable + " font-sans antialiased"}>
         {children}
         {process.env.NODE_ENV === 'production' && <Analytics />}
       </body>

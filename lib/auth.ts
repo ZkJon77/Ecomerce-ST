@@ -60,8 +60,8 @@ export const isValidEmail = (email: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test
 export const formatPhone = (v: string) => {
   const digits = v.replace(/\D/g, "").slice(0, 11)
   if (digits.length <= 2) return digits
-  if (digits.length <= 7) return `(${digits.slice(0, 2)}) ${digits.slice(2)}`
-  return `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7)}`
+  if (digits.length <= 7) return "(" + digits.slice(0, 2) + ") " + digits.slice(2)
+  return "(" + digits.slice(0, 2) + ") " + digits.slice(2, 7) + "-" + digits.slice(7)
 }
 
 // ─── Google Sign-In ─────────────────────────────────────────────────────────
