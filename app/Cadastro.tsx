@@ -172,6 +172,7 @@ export default function Cadastro({ onSuccess, onSwitchToLogin, onClose }: Cadast
             <div style={{ display: "flex", alignItems: "center", gap: 8, border: "1px solid #d1d5db", borderRadius: 8, padding: "10px 12px" }}>
               <Phone size={15} color="#999" />
               <input value={phone} onChange={e => setPhone(formatPhone(e.target.value))} placeholder="(19) 99999-9999"
+                maxLength={15}
                 style={{ border: "none", outline: "none", fontSize: 14, flex: 1, background: "transparent" }} />
             </div>
           </div>

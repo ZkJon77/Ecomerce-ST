@@ -137,7 +137,7 @@ const SimulatorPage = () => {
           <Palette size={24} color="#fbbf24" />
           <h1 style={{ fontSize: 28, fontWeight: 800, margin: 0 }}>Simulador Profissional</h1>
         </div>
-        <p style={{ fontSize: 14, color: "rgba(255,255,255,0.8)", margin: 0, maxWidth: 600, margin: "0 auto" }}>
+        <p style={{ fontSize: 14, color: "rgba(255,255,255,0.8)", maxWidth: 600, margin: "0 auto" }}>
           Explore harmonias cromáticas inspiradas no Adobe Color e visualize a cor ideal para seu ambiente.
         </p>
       </div>

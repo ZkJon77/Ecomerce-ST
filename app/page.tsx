@@ -15,6 +15,9 @@ import ProductsPage from "@/components/ProductsPage"
 import KitsPage from "@/components/KitsPage"
 import CalculatorPage from "@/components/CalculatorPage"
 import SimulatorPage from "@/components/SimulatorPage"
+import ProductDetailsPage from "@/components/ProductDetailsPage"
+
+
 import DeliveryPage from "@/components/DeliveryPage"
 import ColorPage from "@/components/ColorPage"
 import CartModal from "@/components/CartModal"
@@ -24,6 +27,7 @@ import { Product, CartItem, ToastData } from "@/lib/constants"
 
 export default function App() {
   const [page, setPage] = useState("home")
+  const [selectedProductId, setSelectedProductId] = useState<number | null>(null)
   const [cart, setCart] = useState<CartItem[]>([])
   const [cartOpen, setCartOpen] = useState(false)
   const [favorites, setFavorites] = useState<number[]>([])
@@ -62,6 +66,11 @@ export default function App() {
   const cartCount = cart.reduce((s, i) => s + i.qty, 0)
   const goToCategory = (_cat: string) => setPage("produtos")
 
+  const handleProductClick = useCallback((id: number) => {
+    setSelectedProductId(id);
+    setPage("details");
+  }, []);
+
   return (
     <div style={{ minHeight: "100vh", background: "#f7f8fc", fontFamily: "system-ui, -apple-system, sans-serif", width: "100%" }}>
       <Header cartCount={cartCount} onCartOpen={() => setCartOpen(true)} onGoHome={() => setPage("home")} onGoCor={() => setPage("cor")} currentPage={page} setPage={setPage} searchQuery={searchQuery} setSearchQuery={setSearchQuery} />
@@ -71,7 +80,7 @@ export default function App() {
           <HeroCarousel />
           <QuickFeatures setPage={setPage} />
           <CategoriesGrid onCategoryClick={goToCategory} />
-          <FeaturedProducts onAdd={addToCart} favorites={favorites} onToggleFavorite={toggleFavorite} />
+          <FeaturedProducts onAdd={addToCart} favorites={favorites} onToggleFavorite={toggleFavorite} onProductClick={handleProductClick} />
           <TipsSection />
           <CategorySection onCategoryClick={goToCategory} />
           <StoreBanner />
@@ -83,7 +92,7 @@ export default function App() {
 
       {page === "produtos" && (
         <>
-          <ProductsPage onAdd={addToCart} favorites={favorites} onToggleFavorite={toggleFavorite} searchQuery={searchQuery} />
+          <ProductsPage onAdd={addToCart} favorites={favorites} onToggleFavorite={toggleFavorite} searchQuery={searchQuery} setPage={setPage} onProductClick={handleProductClick} />
           <Footer />
         </>
       )}
@@ -93,6 +102,16 @@ export default function App() {
       {page === "calculadora" && (<><CalculatorPage /><Footer /></>)}
       {page === "simulador" && (<><SimulatorPage /><Footer /></>)}
       {page === "entrega" && (<><DeliveryPage /><Footer /></>)}
+      {page === "details" && (
+        <>
+          <ProductDetailsPage
+            productId={selectedProductId || 0}
+            onAdd={addToCart}
+            setPage={setPage}
+          />
+          <Footer />
+        </>
+      )}
 
       <WhatsAppFAB />
 
