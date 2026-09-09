@@ -52,7 +52,7 @@ export default function LoginPage() {
       const mockToken = "mock-google-id-token-xyz"
 
       // 2. Call the backend to verify the token
-      const response = await fetch("http://localhost:4000/api/auth/google", {
+      const response = await fetch("/api/auth/google", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ token: mockToken }),

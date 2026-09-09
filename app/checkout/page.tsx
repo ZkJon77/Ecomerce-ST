@@ -77,21 +77,30 @@ export default function CheckoutPage() {
 
     setLoading(true)
 
-    // SIMULANDO CHAMADA AO BACKEND
-    await new Promise(resolve => setTimeout(resolve, 1500));
+    try {
+      const response = await fetch("/api/checkout/create-payment", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          cart,
+          userData,
+          paymentMethod,
+        }),
+      });
 
-    const simulatedPayment: PaymentResponse = {
-      id: "SILVER-" + Math.random().toString(36).substr(2, 9).toUpperCase(),
-      status: "pending",
-      amount: subtotal,
-      paymentMethod: paymentMethod,
-      qrCode: paymentMethod === 'pix' ? "https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=PIX-SIMULATED-KEY" : undefined,
-      copyPaste: paymentMethod === 'pix' ? "00020101021226850014br.gov.bcb.pix.0114+5511999999999" : undefined,
-      boletoUrl: paymentMethod === 'boleto' ? "https://example.com/boleto.pdf" : undefined,
-    };
+      const data = await response.json();
 
-    setPaymentResult(simulatedPayment);
-    setLoading(false);
+      if (data.ok) {
+        setPaymentResult(data.payment);
+      } else {
+        alert("Erro ao processar pagamento: " + (data.error || "Erro desconhecido"));
+      }
+    } catch (error) {
+      console.error("Payment Error:", error);
+      alert("Erro de conexão com o servidor de pagamento.");
+    } finally {
+      setLoading(false);
+    }
   }
 
   // If payment is successful/pending, show the result view
