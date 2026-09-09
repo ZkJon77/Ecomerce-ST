@@ -191,11 +191,13 @@ export default function CheckoutPage() {
               <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
                 <label style={{ fontSize: 12, fontWeight: 600, color: "#666" }}>Telefone</label>
                 <input value={userData.phone} onChange={e => setUserData({...userData, phone: e.target.value})} placeholder="(19) 99999-9999"
+                  maxLength={15}
                   style={{ border: "1px solid #d1d5db", borderRadius: 8, padding: "10px 12px", fontSize: 14, outline: "none" }} />
               </div>
               <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
                 <label style={{ fontSize: 12, fontWeight: 600, color: "#666" }}>CEP</label>
                 <input value={userData.address} onChange={e => setUserData({...userData, address: e.target.value})} placeholder="00000-000"
+                  maxLength={9}
                   style={{ border: "1px solid #d1d5db", borderRadius: 8, padding: "10px 12px", fontSize: 14, outline: "none" }} />
               </div>
             </div>

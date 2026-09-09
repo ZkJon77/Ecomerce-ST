@@ -1,7 +1,8 @@
 "use client"
-import React from "react"
+import React, { useState, useEffect, useRef } from "react"
 import { useRouter } from "next/navigation"
 import { Search, User, ShoppingCart, Paintbrush } from "lucide-react"
+import { PRODUCTS } from "@/lib/constants"
 
 interface HeaderProps {
   cartCount: number
@@ -16,6 +17,29 @@ interface HeaderProps {
 
 export const Header = ({ cartCount, onCartOpen, onGoHome, onGoCor, currentPage, setPage, searchQuery, setSearchQuery }: HeaderProps) => {
   const router = useRouter()
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false)
+  const dropdownRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsDropdownOpen(false)
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside)
+    return () => document.removeEventListener("mousedown", handleClickOutside)
+  }, [])
+
+  const filteredProducts = PRODUCTS.filter(p =>
+    p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    p.brand.toLowerCase().includes(searchQuery.toLowerCase())
+  ).slice(0, 6)
+
+  const handleSuggestionClick = (product: any) => {
+    setSearchQuery(product.name)
+    setPage("produtos")
+    setIsDropdownOpen(false)
+  }
 
   return (
     <header style={{ background: "#1a1464", padding: "0", position: "sticky", top: 0, zIndex: 100, boxShadow: "0 2px 8px rgba(0,0,0,0.3)" }}>
@@ -24,16 +48,55 @@ export const Header = ({ cartCount, onCartOpen, onGoHome, onGoCor, currentPage, 
           <div style={{ fontFamily: "Georgia, serif", fontStyle: "italic", fontWeight: 900, fontSize: 32, color: "white", lineHeight: 1, letterSpacing: "-1px" }}>Silver</div>
           <div style={{ fontSize: 9, color: "rgba(255,255,255,0.5)", letterSpacing: 3, textTransform: "uppercase" }}>tintas</div>
         </div>
-        <div style={{ flex: 1, maxWidth: 600, background: "white", borderRadius: 6, display: "flex", alignItems: "center", padding: "8px 14px", gap: 8 }}>
-          <Search size={16} color="#999" />
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Buscar tintas, ferramentas, marcas..."
-            style={{ border: "none", outline: "none", fontSize: 14, color: "#333", width: "100%", background: "transparent" }}
-          />
+
+        <div style={{ flex: 1, maxWidth: 600, position: "relative" }}>
+          <div style={{ background: "white", borderRadius: 6, display: "flex", alignItems: "center", padding: "8px 14px", gap: 8 }}>
+            <Search size={16} color="#999" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={e => {
+                setSearchQuery(e.target.value)
+                setIsDropdownOpen(true)
+              }}
+              onFocus={() => setIsDropdownOpen(true)}
+              placeholder="Buscar tintas, ferramentas, marcas..."
+              style={{ border: "none", outline: "none", fontSize: 14, color: "#333", width: "100%", background: "transparent" }}
+            />
+          </div>
+
+          {isDropdownOpen && searchQuery && filteredProducts.length > 0 && (
+            <div ref={dropdownRef} style={{
+              position: "absolute", top: "100%", left: 0, right: 0,
+              background: "white", borderRadius: 8, marginTop: 8,
+              boxShadow: "0 10px 25px rgba(0,0,0,0.2)",
+              zIndex: 1000, overflow: "hidden", border: "1px solid #eee"
+            }}>
+              {filteredProducts.map(p => (
+                <div
+                  key={p.id}
+                  onClick={() => handleSuggestionClick(p)}
+                  style={{
+                    display: "flex", alignItems: "center", gap: 12, padding: "10px 14px",
+                    cursor: "pointer", borderBottom: "1px solid #f5f5f5", transition: "background 0.2s"
+                  }}
+                  onMouseEnter={(e) => e.currentTarget.style.background = "#f9fafb"}
+                  onMouseLeave={(e) => e.currentTarget.style.background = "white"}
+                >
+                  <img src={p.imageUrl} alt={p.name} style={{ width: 40, height: 40, objectFit: "contain", background: "#f3f4f6", borderRadius: 4 }} />
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: "#333" }}>{p.name}</div>
+                    <div style={{ fontSize: 11, color: "#888" }}>{p.brand}</div>
+                  </div>
+                  <div style={{ fontSize: 13, fontWeight: 800, color: "#1a1464" }}>
+                    R$ {p.price.toFixed(2).replace(".", ",")}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
+
         <div style={{ display: "flex", gap: 2, alignItems: "center" }}>
           {[
             { id: "home", label: "Início" },
