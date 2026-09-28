@@ -1,5 +1,5 @@
 export interface Product {
-  id: number
+  id: string
   name: string
   price: number
   imageUrl: string
@@ -71,7 +71,7 @@ export const PRODUCTS: Product[] = [
     id: 5,
     name: "Tinta PU Automotiva Preto 3,6L",
     price: 189.90,
-    imageUrl: "https://tse4.mm.bing.net/th/id/OIP.4zWZc9F3nS2uR6pTj6m0UQHaHa",
+    imageUrl: "https://m.media-amazon.com/images/I/61sA6N67yDL._AC_SX679_.jpg",
     category: "Tintas",
     brand: "Suvinil",
     stars: 5,
@@ -81,7 +81,7 @@ export const PRODUCTS: Product[] = [
     id: 6,
     name: "Primer PU Cinza 3,6L",
     price: 149.90,
-    imageUrl: "https://tse3.mm.bing.net/th/id/OIP.qO6MysNn7M8jYzY2wqKz6QHaHa",
+    imageUrl: "https://m.media-amazon.com/images/I/61R8KjL8eRL._AC_SX679_.jpg",
     category: "Impermeabilizante",
     brand: "Suvinil",
     stars: 4,
@@ -334,7 +334,7 @@ export const PRODUCTS: Product[] = [
     id: 31,
     name: "Lixa d'água Grão 220 (10 un)",
     price: 15.00,
-    imageUrl: "https://m.media-amazon.com/images/I/71Kl7e7y9ML._AC_SX679_.jpg",
+    imageUrl: "https://m.media-amazon.com/images/I/71yh4R5VBPL._AC_SX679_.jpg",
     category: "Acessórios",
     brand: "Maxi Rubber",
     stars: 5,
@@ -435,6 +435,113 @@ export const PRODUCTS: Product[] = [
     stars: 4,
     description: "Ideal para retoques rápidos em branco sólido."
   },
+  {
+    id: 41,
+    name: "Tinta Epóxi Piso Cinza 18L",
+    price: 450.00,
+    imageUrl: "https://m.media-amazon.com/images/I/61kJlFbPaoL._AC_SX679_.jpg",
+    category: "Tintas",
+    brand: "Suvinil",
+    stars: 5,
+    coverage: 300,
+    description: "Extrema resistência para garagens e indústrias.",
+    isBestSeller: true
+  },
+  {
+    id: 42,
+    name: "Tinta Latex PVA Branco 18L",
+    price: 180.00,
+    imageUrl: "https://images.tcdn.com.br/img/img_prod/650361/tinta_acrilica_fosco_completo_coral_branco_18l_4025_1_20200422151912.jpg",
+    category: "Tintas",
+    brand: "Suvinil",
+    stars: 4,
+    coverage: 350,
+    description: "Ideal para tetos e primeiras demãos."
+  },
+  {
+    id: 43,
+    name: "Kit Pintura Iniciante",
+    price: 59.90,
+    imageUrl: "https://m.media-amazon.com/images/I/71yh4R5VBPL._AC_SX679_.jpg",
+    category: "Ferramentas para Pintura",
+    brand: "Eucatex",
+    stars: 4,
+    description: "Rolo, bandeja e fita crepe para pequenos reparos."
+  },
+  {
+    id: 44,
+    name: "Verniz Impregnante Cedro 900ml",
+    price: 48.00,
+    imageUrl: "https://cdn.awsli.com.br/600x700/1347/1347540/produto/53873337/thinner-900ml-anjo.jpg",
+    category: "Tintas",
+    brand: "Lucks Color",
+    stars: 5,
+    coverage: 200,
+    description: "Realça os veios da madeira com tom cedro."
+  },
+  {
+    id: 45,
+    name: "Tinta Acrílica Amarelo Canário 3,6L",
+    price: 110.00,
+    imageUrl: "https://m.media-amazon.com/images/I/61kJlFbPaoL._AC_SX679_.jpg",
+    category: "Tintas",
+    brand: "Suvinil",
+    stars: 4,
+    coverage: 360,
+    description: "Cor vibrante e alegre para ambientes internos."
+  },
+  {
+    id: 46,
+    name: "Massa Corrida Interna 25kg",
+    price: 85.00,
+    imageUrl: "https://m.media-amazon.com/images/I/61b6sFNbKBL._AC_SX679_.jpg",
+    category: "Acessórios",
+    brand: "Suvinil",
+    stars: 4,
+    description: "Fácil lixamento para paredes perfeitas."
+  },
+  {
+    id: 47,
+    name: "Tinta Acrílica Rosa Pastel 18L",
+    price: 310.00,
+    imageUrl: "https://images.tcdn.com.br/img/img_prod/650361/tinta_acrilica_fosco_completo_coral_branco_18l_4025_1_20200422151912.jpg",
+    category: "Tintas",
+    brand: "Suvinil",
+    stars: 5,
+    coverage: 400,
+    description: "Tonalidade suave e acolhedora."
+  },
+  {
+    id: 48,
+    name: "Rolo de Lã Carneiro 23cm",
+    price: 24.90,
+    imageUrl: "https://images.tcdn.com.br/img/img_prod/650361/rolo_de_la_para_pintura_atlas_15cm_4025_1_20200422151912.jpg",
+    category: "Ferramentas para Pintura",
+    brand: "Eucatex",
+    stars: 5,
+    description: "Alta absorção para máxima produtividade."
+  },
+  {
+    id: 49,
+    name: "Tinta Esmalte Semibrilho Branco 3,6L",
+    price: 92.00,
+    imageUrl: "https://m.media-amazon.com/images/I/5156f0sCGDL._AC_SX679_.jpg",
+    category: "Tintas",
+    brand: "I9",
+    stars: 4,
+    coverage: 340,
+    description: "Equilíbrio perfeito entre brilho e fosco."
+  },
+  {
+    id: 50,
+    name: "Spray PU Azul Metálico 400ml",
+    price: 42.00,
+    imageUrl: "https://tse3.mm.bing.net/th/id/OIP.qO6MysNn7M8jYzY2wqKz6QHaHa",
+    category: "Sprays",
+    brand: "Colorgin",
+    stars: 5,
+    description: "Efeito metálico profundo para customizações."
+  }
 ]
 
 export const KITS = [
@@ -468,6 +575,36 @@ export const KITS = [
     originalPrice: 560.00,
     color: "#f59e0b",
   },
+  {
+    id: "sala_luxo",
+    name: "Kit Sala Luxo",
+    icon: "🛋️",
+    description: "Acabamento premium para salas amplas",
+    items: ["Tinta Semibrilho 18L", "Rolo Lã Carneiro", "Bandeja Profissional", "Fita Crepe", "Massa Corrida"],
+    price: 599.90,
+    originalPrice: 720.00,
+    color: "#8b5cf6",
+  },
+  {
+    id: "automotivo",
+    name: "Kit Renovação Auto",
+    icon: "🚗",
+    description: "Tudo para pintura de peças automotivas",
+    items: ["Tinta PU", "Primer PU", "Verniz PU", "Lixa d'água", "Fita Crepe"],
+    price: 399.90,
+    originalPrice: 480.00,
+    color: "#ef4444",
+  },
+  {
+    id: "madeira",
+    name: "Kit Restauração Madeira",
+    icon: "🪵",
+    description: "Proteção e brilho para móveis e decks",
+    items: ["Verniz Marítimo", "Lixa Grão 220", "Pincel Tramontina", "Thinner"],
+    price: 189.90,
+    originalPrice: 230.00,
+    color: "#78350f",
+  }
 ]
 
 export const COLOR_PALETTE = [
@@ -510,29 +647,29 @@ export const BRANDS = [
 export const HERO_SLIDES = [
   {
     bg: "#1a1464",
-    image: "https://images.tcdn.com.br/img/img_prod/650361/tinta_acrilica_fosco_completo_coral_branco_18l_4025_1_20200422151912.jpg",
-    backgroundImage: "https://images.unsplash.com/photo-1589939705385-2ec553977760?q=80&w=2070&auto=format&fit=crop",
+    image: "https://copafer.vtexassets.com/arquivos/ids/207022-800-auto?v=638997608427070000&width=800&height=auto&aspect=true",
+    backgroundImage: "https://images.unsplash.com/photo-1562619667-d6d26d870e7c?q=80&w=2070&auto=format&fit=crop",
     brand: "Suvinil",
-    title: "renova",
-    sub: "Creme de Pintura",
-    fallback: "🎨"
+    title: "Cores que Inspiram",
+    sub: "Transforme seus ambientes com a linha Premium da Suvinil.",
+    fallback: "https://images.unsplash.com/photo-1589939705385-2ec553977760?q=80&w=500&auto=format&fit=crop"
   },
   {
     bg: "#0d4a1a",
-    image: "https://m.media-amazon.com/images/I/61kJlFbPaoL._AC_SX679_.jpg",
-    backgroundImage: "https://images.unsplash.com/photo-1560185127-6ed189654679?q=80&w=2069&auto=format&fit=crop",
+    image: "https://casatoni.vteximg.com.br/arquivos/ids/159634-1000-1000/Suv-Esmalte-Cor-e-Protecao-900ml.jpg?v=637021578813970000",
+    backgroundImage: "https://images.unsplash.com/photo-1589939705385-2ec553977760?q=80&w=2070&auto=format&fit=crop",
     brand: "Suvinil",
-    title: "Cor & Proteção",
-    sub: "Interior e Exterior",
-    fallback: "🪣"
+    title: "Proteção Total",
+    sub: "Tinta Cor & Proteção: a armadura ideal para sua casa.",
+    fallback: "https://images.unsplash.com/photo-1562619667-d6d26d870e7c?q=80&w=500&auto=format&fit=crop"
   },
   {
     bg: "#b45309",
-    image: "https://images.tcdn.com.br/img/img_prod/650361/rolo_de_la_para_pintura_atlas_15cm_4025_1_20200422151912.jpg",
+    image: "https://acdn-us.mitiendanube.com/stores/006/950/691/products/644373-0829297-dccdcd47e8e4477bad17721328207578-1024-1024.webp",
     backgroundImage: "https://images.unsplash.com/photo-1595844730298-b955ed7774d3?q=80&w=2070&auto=format&fit=crop",
     brand: "Eucatex",
-    title: "Qualidade",
-    sub: "Ferramentas e Acabamentos Profissionais",
-    fallback: "🖌️"
+    title: "Acabamento Perfeito",
+    sub: "Ferramentas profissionais para quem não abre mão da qualidade.",
+    fallback: "https://images.unsplash.com/photo-1595844730298-b955ed7774d3?q=80&w=500&auto=format&fit=crop"
   },
 ]

@@ -1,16 +1,17 @@
 "use client"
 import React from "react"
 import { ShoppingCart, ArrowLeft, Star, ShieldCheck, Droplets, Zap } from "lucide-react"
-import { Product, PRODUCTS } from "@/lib/constants"
+import { Product } from "@/lib/constants"
 
 interface ProductDetailsPageProps {
-  productId: number
+  productId: string
   onAdd: (p: Product) => void
   setPage: (p: string) => void
+  products: Product[]
 }
 
-const ProductDetailsPage = ({ productId, onAdd, setPage }: ProductDetailsPageProps) => {
-  const product = PRODUCTS.find(p => p.id === productId)
+const ProductDetailsPage = ({ productId, onAdd, setPage, products }: ProductDetailsPageProps) => {
+  const product = products.find(p => p.id === productId)
 
   if (!product) {
     return (

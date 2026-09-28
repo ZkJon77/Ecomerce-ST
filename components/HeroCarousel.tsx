@@ -160,13 +160,16 @@ const HeroCarousel = () => {
               }}
             />
           ) : (
-            <div style={{
-              width: 220, height: 260, borderRadius: 24, background: "rgba(255,255,255,0.12)",
-              display: "flex", alignItems: "center", justifyContent: "center", fontSize: 96,
-              border: "1px solid rgba(255,255,255,0.2)"
-            }}>
-              {slide.fallback}
-            </div >
+            <img
+              src={slide.fallback}
+              alt="fallback"
+              style={{
+                height: "100%",
+                width: "100%",
+                objectFit: "contain",
+                filter: "drop-shadow(0 20px 50px rgba(0,0,0,0.5))"
+              }}
+            />
           )}
           <style>{`
             @keyframes float {

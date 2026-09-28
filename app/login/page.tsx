@@ -8,11 +8,8 @@ import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
 import { ArrowLeft, LogIn, UserPlus, Loader2 } from "lucide-react"
+import { supabase } from "@/lib/supabase"
 
-/**
- * Login Page for Silver Tintas.
- * Handles traditional email/password authentication and Google OAuth 2.0 simulation.
- */
 export default function LoginPage() {
   const router = useRouter()
   const [email, setEmail] = useState("")
@@ -21,9 +18,6 @@ export default function LoginPage() {
   const [isRegistering, setIsRegistering] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
 
-  /**
-   * Handles traditional login or registration form submission.
-   */
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (isRegistering && password !== confirmPassword) {
@@ -32,42 +26,36 @@ export default function LoginPage() {
     }
 
     setIsLoading(true)
-    // Simulate API call
-    setTimeout(() => {
+    try {
+      if (isRegistering) {
+        const { error } = await supabase.auth.signUp({ email, password })
+        if (error) throw error;
+        alert("Conta criada com sucesso! Verifique seu email para confirmar.")
+      } else {
+        const { error } = await supabase.auth.signInWithPassword({ email, password })
+        if (error) throw error;
+        alert("Login realizado com sucesso!")
+        router.push("/")
+      }
+    } catch (error: any) {
+      alert("Erro: " + error.message)
+    } finally {
       setIsLoading(false)
-      alert(isRegistering ? "Conta criada com sucesso!" : "Login realizado com sucesso!")
-      router.push("/")
-    }, 1500)
+    }
   }
 
-  /**
-   * Simulates the Google OAuth flow.
-   * In a real environment, this would use @react-oauth/google to get an ID Token
-   * from the Google Identity Services SDK, then send it to the backend for verification.
-   */
   const handleGoogleLogin = async () => {
     setIsLoading(true)
     try {
-      // 1. Mock: Imagine we received a token from the Google Frontend SDK
-      const mockToken = "mock-google-id-token-xyz"
-
-      // 2. Call the backend to verify the token
-      const response = await fetch("/api/auth/google", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ token: mockToken }),
-      })
-      const data = await response.json()
-
-      if (data.ok) {
-        alert("Bem-vindo, " + data.user.name + "!");
-        router.push("/")
-      } else {
-        alert("Erro na autenticação com Google: " + data.error)
-      }
-    } catch (error) {
-      console.error("Google Auth Error:", error)
-      alert("Erro de conexão com o servidor de autenticação.")
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: `${window.location.origin}/`,
+        },
+      });
+      if (error) throw error;
+    } catch (error: any) {
+      alert("Erro na autenticação com Google: " + error.message)
     } finally {
       setIsLoading(false)
     }
@@ -75,7 +63,6 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen flex flex-col" style={{ background: "#1a1464", fontFamily: "system-ui, -apple-system, sans-serif" }}>
-      {/* Header with navigation and brand logo */}
       <header style={{ background: "#1a1464", padding: "16px", borderBottom: "1px solid rgba(255,255,255,0.1)" }}>
         <div className="container mx-auto flex items-center relative">
           <button
@@ -96,7 +83,6 @@ export default function LoginPage() {
         </div>
       </header>
 
-      {/* Main Login/Register Card */}
       <div className="flex-1 flex items-center justify-center p-4">
         <Card className="w-full max-w-md border-0 shadow-2xl" style={{ background: "white", borderRadius: 16 }}>
           <CardHeader className="space-y-1 text-center pb-6">
@@ -177,7 +163,6 @@ export default function LoginPage() {
                 )}
               </Button>
 
-              {/* "Or continue with" separator */}
               <div className="relative my-2">
                 <div className="absolute inset-0 flex items-center">
                   <span className="w-full border-t" />
@@ -187,7 +172,6 @@ export default function LoginPage() {
                 </div>
               </div>
 
-              {/* Google Login Button */}
               <Button
                 type="button"
                 variant="outline"

@@ -17,7 +17,7 @@ import {
 // ─── TYPES ──────────────────────────────────────────────────────────────────
 
 interface Product {
-  id: number | string
+  id: string
   name: string
   price: number
   imageUrl: string

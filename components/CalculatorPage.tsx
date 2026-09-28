@@ -187,12 +187,18 @@ const CalculatorPage = () => {
               ))}
             </div>
             <div style={{ background: "#f0f4ff", border: "1px solid #c7d2fe", borderRadius: 12, padding: "16px", marginBottom: 16, textAlign: "center" }}>
-              <div style={{ fontSize: 13, fontWeight: 600, color: "#4338ca", marginBottom: 6, display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
-                <Info size={16} /> Recomendação de Compra:
+              <div style={{ fontSize: 13, fontWeight: 600, color: "#4338ca", marginBottom: 8, display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
+                <Info size={16} /> Ferramentas Sugeridas:
               </div>
-              <div style={{ fontSize: 18, fontWeight: 900, color: "#1a1464" }}>{result.suggestedCans}</div>
+              <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "center", gap: 8 }}>
+                {result.suggestedTools.map((tool, idx) => (
+                  <span key={idx} style={{ background: "white", border: "1px solid #c7d2fe", padding: "4px 10px", borderRadius: 15, fontSize: 12, color: "#4338ca", fontWeight: 500 }}>
+                    {tool}
+                  </span>
+                ))}
+                {result.suggestedTools.length === 0 && <span style={{ fontSize: 12, color: "#999" }}>Nenhuma ferramenta extra sugerida.</span>}
+              </div>
             </div>
-
             <div style={{ background: "#fffbeb", border: "1px solid #fcd34d", borderRadius: 8, padding: "16px", fontSize: 14, color: "#78350f", textAlign: "center", marginBottom: 16 }}>
               <div style={{ fontWeight: 800, marginBottom: 4 }}>💰 Estimativa de Investimento: { "R$ " + result.estimatedCost.toLocaleString('pt-BR', { minimumFractionDigits: 2 }) }</div>
               <div style={{ fontSize: 11 }}>Cálculo baseado em preços médios de mercado para as latas sugeridas.</div>
