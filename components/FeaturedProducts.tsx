@@ -1,13 +1,14 @@
 "use client";
 import React from "react";
 import { Heart, ShoppingCart } from "lucide-react";
-import { Product, PRODUCTS } from "@/lib/constants";
+import { Product } from "@/lib/constants";
 
 interface FeaturedProductsProps {
+  products: Product[];
   onAdd: (p: Product) => void;
-  favorites: number[];
-  onToggleFavorite: (id: number) => void;
-  onProductClick: (id: number) => void;
+  favorites: string[];
+  onToggleFavorite: (id: string) => void;
+  onProductClick: (id: string) => void;
 }
 
 const StarRow = ({ count = 5, size = 12 }: { count?: number; size?: number }) => (
@@ -20,8 +21,9 @@ const StarRow = ({ count = 5, size = 12 }: { count?: number; size?: number }) =>
 
 const fmt = (n: number) => "R$ " + n.toFixed(2).replace(".", ",");
 
-export default function FeaturedProducts({ onAdd, favorites, onToggleFavorite }: FeaturedProductsProps) {
-  const bestSellers = PRODUCTS.filter(p => p.isBestSeller).slice(0, 4);
+export default function FeaturedProducts({ products, onAdd, favorites, onToggleFavorite, onProductClick }: FeaturedProductsProps) {
+  // Filter bestSellers from the provided products list
+  const bestSellers = products.filter(p => p.isBestSeller).slice(0, 4);
 
   return (
     <section style={{ padding: "40px 32px", maxWidth: 1400, margin: "0 auto" }}>
@@ -62,4 +64,3 @@ export default function FeaturedProducts({ onAdd, favorites, onToggleFavorite }:
     </section>
   );
 }
-

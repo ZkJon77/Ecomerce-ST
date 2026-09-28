@@ -1,7 +1,7 @@
 "use client"
 import React, { useState } from "react"
 import { Heart, ShoppingCart, ArrowLeft } from "lucide-react"
-import { Product, PRODUCTS, CATEGORIES, BRANDS } from "@/lib/constants"
+import { Product } from "@/lib/constants"
 
 const StarRow = ({ count = 5, size = 12 }: { count?: number; size?: number }) => (
   <div style={{ display: "flex", gap: 1 }}>
@@ -13,11 +13,18 @@ const StarRow = ({ count = 5, size = 12 }: { count?: number; size?: number }) =>
 
 const fmt = (n: number) => "R$ " + n.toFixed(2).replace(".", ",");
 
-const ProductsPage = ({ onAdd, favorites, onToggleFavorite, initialCategory, searchQuery, setPage, onProductClick }: { onAdd: (p: Product) => void; favorites: number[]; onToggleFavorite: (id: number) => void; initialCategory?: string; searchQuery?: string; setPage: (p: string) => void; onProductClick: (id: number) => void }) => {
-  const [selCat, setSelCat] = useState(initialCategory || "Todos")
+const ProductsPage = ({ onAdd, favorites, onToggleFavorite, initialCategory, searchQuery, setPage, onProductClick, products }: { onAdd: (p: Product) => void; favorites: string[]; onToggleFavorite: (id: string) => void; initialCategory?: string; searchQuery?: string; setPage: (p: string) => void; onProductClick: (id: string) => void; products: Product[] }) => {
+  const [selCat, setSelCat] = useState("Todos")
   const [selBrand, setSelBrand] = useState("Todos")
 
-  const filtered = PRODUCTS.filter(p => {
+  // Requested brands for the tabs
+  const requestedBrands = ["Eucatex", "Lucks Color", "Autoluks", "Colorgin", "I9", "Maxi Rubber", "Suvinil"]
+
+  // Derive categories and brands from the product list
+  const categories = Array.from(new Set(products.map(p => p.category)));
+  const brands = requestedBrands.filter(b => products.some(p => p.brand === b));
+
+  const filtered = products.filter(p => {
     const matchesCat = selCat === "Todos" || p.category === selCat;
     const matchesBrand = selBrand === "Todos" || p.brand === selBrand;
     const matchesSearch = !searchQuery ||
@@ -45,21 +52,21 @@ const ProductsPage = ({ onAdd, favorites, onToggleFavorite, initialCategory, sea
             <div style={{ fontSize: 13, fontWeight: 700, color: "#888", marginBottom: 8, textTransform: "uppercase" }}>Filtrar por Categoria:</div>
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
               <button onClick={() => setSelCat("Todos")} style={{ padding: "6px 12px", borderRadius: 20, border: "1px solid #ddd", background: selCat === "Todos" ? "#1a1464" : "white", color: selCat === "Todos" ? "white" : "#666", fontSize: 13, cursor: "pointer", transition: "all 0.2s" }}>Todos</button>
-              {CATEGORIES.map(c => (
-                <button key={c.name} onClick={() => setSelCat(c.name)} style={{ padding: "6px 12px", borderRadius: 20, border: "1px solid #ddd", background: selCat === c.name ? "#1a1464" : "white", color: selCat === c.name ? "white" : "#666", fontSize: 13, cursor: "pointer", transition: "all 0.2s" }}>
-                  {c.icon} {c.name}
+              {categories.map(c => (
+                <button key={c} onClick={() => setSelCat(c)} style={{ padding: "6px 12px", borderRadius: 20, border: "1px solid #ddd", background: selCat === c ? "#1a1464" : "white", color: selCat === c ? "white" : "#666", fontSize: 13, cursor: "pointer", transition: "all 0.2s" }}>
+                  {c}
                 </button>
               ))}
             </div>
           </div>
 
           <div style={{ background: "white", padding: "16px", borderRadius: 12, border: "1px solid #eee" }}>
-            <div style={{ fontSize: 13, fontWeight: 700, color: "#888", marginBottom: 8, textTransform: "uppercase" }}>Filtrar por Marca:</div>
+            <div style={{ fontSize: 13, fontWeight: 700, color: "#888", marginBottom: 8, textTransform: "uppercase" }}>Marcas:</div>
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-              <button onClick={() => setSelBrand("Todos")} style={{ padding: "6px 12px", borderRadius: 20, border: "1px solid #ddd", background: selBrand === "Todos" ? "#1a1464" : "white", color: selBrand === "Todos" ? "white" : "#666", fontSize: 13, cursor: "pointer", transition: "all 0.2s" }}>Todas</button>
-              {BRANDS.map(b => (
-                <button key={b.name} onClick={() => setSelBrand(b.name)} style={{ padding: "6px 12px", borderRadius: 20, border: "1px solid #ddd", background: selBrand === b.name ? "#1a1464" : "white", color: selBrand === b.name ? "white" : "#666", fontSize: 13, cursor: "pointer", transition: "all 0.2s" }}>
-                  {b.name}
+              <button onClick={() => setSelBrand("Todos")} style={{ padding: "8px 16px", borderRadius: 12, border: "1px solid #ddd", background: selBrand === "Todos" ? "#1a1464" : "white", color: selBrand === "Todos" ? "white" : "#666", fontSize: 13, fontWeight: 600, cursor: "pointer", transition: "all 0.2s" }}>Todas</button>
+              {brands.map(b => (
+                <button key={b} onClick={() => setSelBrand(b)} style={{ padding: "8px 16px", borderRadius: 12, border: "1px solid #ddd", background: selBrand === b ? "#1a1464" : "white", color: selBrand === b ? "white" : "#666", fontSize: 13, fontWeight: 600, cursor: "pointer", transition: "all 0.2s" }}>
+                  {b}
                 </button>
               ))}
             </div>
@@ -74,14 +81,14 @@ const ProductsPage = ({ onAdd, favorites, onToggleFavorite, initialCategory, sea
         </div>
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: 48 }}>
-          {BRANDS.map(brand => {
-            const brandProducts = filtered.filter(p => p.brand === brand.name);
+          {brands.map(brand => {
+            const brandProducts = filtered.filter(p => p.brand === brand);
             if (brandProducts.length === 0) return null;
 
             return (
-              <div key={brand.name} style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+              <div key={brand} style={{ display: "flex", flexDirection: "column", gap: 20 }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 12, borderBottom: "2px solid #1a1464", paddingBottom: 8 }}>
-                  <h2 style={{ fontSize: 22, fontWeight: 800, color: "#1a1464", margin: 0 }}>{brand.name}</h2>
+                  <h2 style={{ fontSize: 22, fontWeight: 800, color: "#1a1464", margin: 0 }}>{brand}</h2>
                   <span style={{ background: "#f0f4ff", color: "#1a1464", fontSize: 12, fontWeight: 700, padding: "2px 8px", borderRadius: 10, border: "1px solid #dbeafe" }}>{brandProducts.length} Produtos</span>
                 </div>
 
