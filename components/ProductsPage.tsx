@@ -17,12 +17,9 @@ const ProductsPage = ({ onAdd, favorites, onToggleFavorite, initialCategory, sea
   const [selCat, setSelCat] = useState("Todos")
   const [selBrand, setSelBrand] = useState("Todos")
 
-  // Requested brands for the tabs
-  const requestedBrands = ["Eucatex", "Lucks Color", "Autoluks", "Colorgin", "I9", "Maxi Rubber", "Suvinil"]
-
   // Derive categories and brands from the product list
   const categories = Array.from(new Set(products.map(p => p.category)));
-  const brands = requestedBrands.filter(b => products.some(p => p.brand === b));
+  const brands = Array.from(new Set(products.map(p => p.brand)));
 
   const filtered = products.filter(p => {
     const matchesCat = selCat === "Todos" || p.category === selCat;

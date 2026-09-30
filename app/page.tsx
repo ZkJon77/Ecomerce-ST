@@ -57,11 +57,12 @@ export default function App() {
           fetch('/api/kits').catch(() => ({ ok: false }))
         ]);
 
-        const prodData = prodRes.ok ? await prodRes.json() : PRODUCTS;
-        const kitData = kitRes.ok ? await kitRes.json() : KITS;
+        // Force usage of constants for now to ensure new products appear
+        const prodData = PRODUCTS;
+        const kitData = KITS;
 
-        setProducts(Array.isArray(prodData) && prodData.length > 0 ? prodData : PRODUCTS);
-        setKits(Array.isArray(kitData) && kitData.length > 0 ? kitData : KITS);
+        setProducts(prodData);
+        setKits(kitData);
       } catch (error) {
         console.error("Failed to load data:", error);
         // Last resort: use constants
