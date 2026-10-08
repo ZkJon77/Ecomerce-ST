@@ -21,7 +21,7 @@ export async function GET() {
       return NextResponse.json(PRODUCTS);
     }
 
-    const formattedProducts = products.map(p => ({
+    const formattedProducts = products.map((p: any) => ({
       id: p.id,
       name: p.name,
       price: p.price,
