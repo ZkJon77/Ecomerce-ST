@@ -1,7 +1,7 @@
 "use client"
 import React, { useState, useEffect, useRef } from "react"
 import { useRouter } from "next/navigation"
-import { Search, User, ShoppingCart, Paintbrush } from "lucide-react"
+import { Home, Search, User, ShoppingCart, Paintbrush } from "lucide-react"
 import { PRODUCTS } from "@/lib/constants"
 
 // HeaderProps: { cartCount: number, onCartOpen: () => void, onGoHome: () => void, onGoCor: () => void, currentPage: string, setPage: (p: string) => void, searchQuery: string, setSearchQuery: (q: string) => void }
@@ -35,9 +35,15 @@ export const Header = ({ cartCount, onCartOpen, onGoHome, onGoCor, currentPage, 
   return (
     <header style={{ background: "#1a1464", padding: "0", position: "sticky", top: 0, zIndex: 100, boxShadow: "0 2px 8px rgba(0,0,0,0.3)" }}>
       <div style={{ maxWidth: 1400, margin: "0 auto", padding: "12px 32px", display: "flex", alignItems: "center", gap: 20 }}>
-        <div onClick={onGoHome} style={{ cursor: "pointer", flexShrink: 0 }}>
-          <div style={{ fontFamily: "Georgia, serif", fontStyle: "italic", fontWeight: 900, fontSize: 32, color: "white", lineHeight: 1, letterSpacing: "-1px" }}>Silver</div>
-          <div style={{ fontSize: 9, color: "rgba(255,255,255,0.5)", letterSpacing: 3, textTransform: "uppercase" }}>tintas</div>
+        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+          <button onClick={onGoHome} style={{ background: "none", border: "none", color: "white", cursor: "pointer", display: "flex", alignItems: "center", gap: 4, padding: "6px 12px", borderRadius: 6, transition: "all 0.2s" }}>
+            <Home size={18} />
+            <span style={{ fontSize: 13, fontWeight: 600 }}>Home</span>
+          </button>
+          <div onClick={onGoHome} style={{ cursor: "pointer", flexShrink: 0, marginLeft: 8 }}>
+            <div style={{ fontFamily: "Georgia, serif", fontStyle: "italic", fontWeight: 900, fontSize: 32, color: "white", lineHeight: 1, letterSpacing: "-1px" }}>Silver</div>
+            <div style={{ fontSize: 9, color: "rgba(255,255,255,0.5)", letterSpacing: 3, textTransform: "uppercase" }}>tintas</div>
+          </div>
         </div>
 
         <div style={{ flex: 1, maxWidth: 600, position: "relative" }}>

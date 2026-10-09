@@ -1,6 +1,11 @@
 import { NextResponse } from 'next/server';
 import { supabase } from '../../../../lib/supabase';
 import { sendOrderNotification } from '../../../../lib/whatsapp';
+import { MercadoPagoConfig, Payment } from 'mercadopago';
+
+const client = new MercadoPagoConfig({
+  accessToken: process.env.MP_ACCESS_TOKEN
+});
 
 export async function POST(req) {
   try {
@@ -47,22 +52,56 @@ export async function POST(req) {
       paymentMethod,
     }, cart);
 
-    // 4. Retornar resposta de pagamento (mantendo a lógica de mock para o frontend)
-    const paymentId = `pay_${Math.random().toString(36).substring(2, 11)}`;
+    // 4. Processar Pagamento Real via Mercado Pago
+    const payment = new Payment(client);
+
+    let paymentResponse;
+    if (paymentMethod === 'pix') {
+      paymentResponse = await payment.create({
+        body: {
+          transaction_amount: amount,
+          description: `Pedido #${order.id}`,
+          payment_method_id: 'pix',
+          payer: {
+            email: userData.email,
+            first_name: userData.name,
+          },
+        }
+      });
+    } else if (paymentMethod === 'boleto') {
+      paymentResponse = await payment.create({
+        body: {
+          transaction_amount: amount,
+          description: `Pedido #${order.id}`,
+          payment_method_id: 'bolbradesco',
+          payer: {
+            email: userData.email,
+            first_name: userData.name,
+          },
+        }
+      });
+    } else {
+      // Para cartão, normalmente usaríamos o Checkout Pro ou integraríamos o SDK de cards.
+      // Aqui simulamos a aprovação ou redirecionamos para o Checkout Pro.
+      return NextResponse.json({
+        ok: true,
+        payment: { id: order.id, status: 'approved', amount },
+        orderId: order.id
+      });
+    }
+
     const response = {
-      id: paymentId,
-      status: 'pending',
-      amount,
+      id: paymentResponse.id,
+      status: paymentResponse.status,
+      amount: paymentResponse.transaction_amount,
       paymentMethod,
     };
 
     if (paymentMethod === 'pix') {
-      response.qrCode = 'https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=PIX-MOCK-DATA';
-      response.copyPaste = '00020126360014BR.GOV.BCB.PIX0000000000';
+      response.qrCode = paymentResponse.point_of_interaction.transaction_data.qr_code_base64;
+      response.copyPaste = paymentResponse.point_of_interaction.transaction_data.qr_code;
     } else if (paymentMethod === 'boleto') {
-      response.boletoUrl = 'https://example.com/boleto-pdf';
-    } else if (paymentMethod === 'card') {
-      response.status = 'approved';
+      response.boletoUrl = paymentResponse.point_of_interaction.transaction_details.external_resource_url;
     }
 
     return NextResponse.json({ ok: true, payment: response, orderId: order.id });
