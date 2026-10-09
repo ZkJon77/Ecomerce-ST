@@ -1,33 +1,15 @@
 "use client"
 import React, { useState } from "react"
-import { Paintbrush, Check, AlertCircle } from "lucide-react"
-
-const COLOR_MAP = {
-  "NH731P": { name: "Prata Lunar", hex: "#BFC1C2", description: "Prata metálico clássico (Alabaster Silver) - Tonalidade equilibrada com reflexos metálicos frios." },
-  "NH731": { name: "Prata Lunar", hex: "#BFC1C2", description: "Prata metálico clássico (Alabaster Silver) - Tonalidade equilibrada com reflexos metálicos frios." },
-  "NH700P": { name: "Preto Cristal", hex: "#050505", description: "Preto profundo (Crystal Black Pearl) - Preto intenso com partículas de brilho cristalino." },
-  "NH731S": { name: "Branco Pérola", hex: "#FDFDFD", description: "Branco sofisticado com reflexos perolados e profundidade." },
-  "NH789P": { name: "Vermelho Rubi", hex: "#A52A2A", description: "Vermelho metálico vibrante - Tonalidade intensa para acabamentos esportivos." },
-  "NH800P": { name: "Azul Metálico", hex: "#000080", description: "Azul escuro profundo com partículas metálicas sutis." },
-  "NH900P": { name: "Verde Esmeralda", hex: "#2E8B57", description: "Verde metálico elegante com fundo profundo." },
-  "NH123P": { name: "Amarelo Canário", hex: "#FFEF00", description: "Amarelo sólido vibrante e de alta visibilidade." },
-  "NH444P": { name: "Cinza Grafite", hex: "#363636", description: "Cinza escuro moderno - Tonalidade sóbria e sofisticada." },
-  "NH555P": { name: "Bege Champanhe", hex: "#E7D3B5", description: "Tonalidade creme metálica sofisticada." },
-};
-
-const CAR_MODELS = [
-  { brand: "Honda", model: "Civic", years: { "2012-2015": "NH731P", "2016-2020": "NH731S" } },
-  { brand: "Honda", model: "Fit", years: { "2009-2014": "NH731", "2015-2021": "NH731P" } },
-  { brand: "Toyota", model: "Corolla", years: { "2010-2015": "NH444P", "2016-2022": "NH700P" } },
-  { brand: "Hyundai", model: "HB20", years: { "2013-2018": "NH789P", "2019-2023": "NH800P" } },
-  { brand: "Volkswagen", model: "Gol", years: { "2008-2016": "NH555P", "2017-2022": "NH444P" } },
-];
+import { Paintbrush, Check, AlertCircle, MessageCircle, X, Send, Sparkles } from "lucide-react"
+import { COLOR_MAP, CAR_MODELS } from "@/lib/constants/colors"
+import SilverMascot from "./SilverMascot"
 
 const ColorPage = () => {
   const [code, setCode] = useState("")
   const [result, setResult] = useState(null)
   const [loading, setLoading] = useState(false)
   const [searchMode, setSearchMode] = useState("code") // "code" or "car"
+  const [searchTerm, setSearchTerm] = useState("")
   const [selectedBrand, setSelectedBrand] = useState("")
   const [selectedModel, setSelectedModel] = useState("")
   const [selectedYear, setSelectedYear] = useState("")
@@ -41,6 +23,41 @@ const ColorPage = () => {
   const filteredYears = selectedModel && selectedBrand
     ? CAR_MODELS.find(m => m.brand === selectedBrand && m.model === selectedModel)?.years
     : null
+
+  const handleGlobalSearch = () => {
+    if (!searchTerm) return;
+    setLoading(true);
+    setResult(null);
+    // Removido o setTimeout para tornar a busca instantânea
+    const term = searchTerm.toLowerCase();
+
+    const carMatch = CAR_MODELS.find(m =>
+      m.brand.toLowerCase().includes(term) ||
+      m.model.toLowerCase().includes(term)
+    );
+
+    if (carMatch) {
+      const firstYear = Object.keys(carMatch.years)[0];
+      const colorCode = carMatch.years[firstYear];
+      setResult(COLOR_MAP[colorCode] || null);
+      setLoading(false);
+      return;
+    }
+
+    const colorMatch = Object.entries(COLOR_MAP).find(([code, data]) =>
+      data.name.toLowerCase().includes(term) ||
+      code.toLowerCase().includes(term)
+    );
+
+    if (colorMatch) {
+      setResult(colorMatch[1]);
+      setLoading(false);
+      return;
+    }
+
+    setResult(null);
+    setLoading(false);
+  }
 
   const handleSearchByCode = () => {
     if (!code) return
@@ -70,101 +87,144 @@ const ColorPage = () => {
   }
 
   return (
-    <div style={{ padding: 20, maxWidth: 600, margin: "0 auto" }}>
-      <div style={{ background: "linear-gradient(135deg, #1a1464 0%, #2a52be 100%)", borderRadius: 12, padding: "20px 16px", marginBottom: 16, color: "white" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
-          <Paintbrush size={24} color="#fbbf24" />
-          <div style={{ fontSize: 18, fontWeight: 800 }}>Consultar Cor do Veículo</div>
-        </div>
-        <p style={{ fontSize: 12, color: "rgba(255,255,255,0.7)" }}>Encontre a tinta exata para o seu carro selecionando o modelo ou digitando o código de pintura.</p>
-      </div>
-
-      <div style={{ background: "white", borderRadius: 12, padding: 24, border: "1px solid #e5e7eb", boxShadow: "0 4px 12px rgba(0,0,0,0.05)" }}>
-        <div style={{ display: "flex", gap: 10, marginBottom: 24 }}>
-          <button onClick={() => setSearchMode("code")} style={{ flex: 1, padding: "10px", borderRadius: 8, border: "none", background: searchMode === "code" ? "#1a1464" : "#f3f4f6", color: searchMode === "code" ? "white" : "#666", fontWeight: 700, cursor: "pointer", transition: "all 0.2s" }}>Por Código</button>
-          <button onClick={() => setSearchMode("car")} style={{ flex: 1, padding: "10px", borderRadius: 8, border: "none", background: searchMode === "car" ? "#1a1464" : "#f3f4f6", color: searchMode === "car" ? "white" : "#666", fontWeight: 700, cursor: "pointer", transition: "all 0.2s" }}>Por Veículo</button>
+    <div className="min-h-screen bg-gray-50 p-4 md:p-8">
+      <div className="max-w-2xl mx-auto">
+        {/* Header */}
+        <div className="bg-gradient-to-br from-[#1a1464] to-[#2a52be] rounded-2xl p-5 md:p-6 mb-4 text-white shadow-lg">
+          <div className="flex items-center gap-3 mb-2">
+            <Paintbrush size={24} className="text-yellow-400" />
+            <h1 className="text-lg md:text-xl font-extrabold">Consultar Cor do Veículo</h1>
+          </div>
+          <p className="text-xs md:text-sm text-white/70">Encontre a tinta exata para o seu carro selecionando o modelo ou digitando o código de pintura.</p>
         </div>
 
-        {searchMode === "code" ? (
-          <div>
-            <label style={{ fontSize: 13, fontWeight: 700, color: "#333", display: "block", marginBottom: 8 }}>Código da cor (Ex: NH731P)</label>
-            <div style={{ display: "flex", gap: 8 }}>
-              <input value={code} onChange={e => setCode(e.target.value.toUpperCase())} placeholder="Digite o código aqui..."
-                style={{ flex: 1, border: "1px solid #d1d5db", borderRadius: 8, padding: "12px", fontSize: 14, outline: "none", fontWeight: 600 }} />
-              <button onClick={handleSearchByCode} style={{ background: "#1a1464", color: "white", border: "none", borderRadius: 8, padding: "10px 20px", fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
-                {loading ? "Buscando..." : "Buscar Cor"}
+        {/* Main Search Card */}
+        <div className="bg-white rounded-2xl p-6 md:p-8 border border-gray-200 shadow-sm">
+          <div className="flex flex-wrap gap-3 mb-6">
+            <button onClick={() => setSearchMode("code")}
+              className={`flex-1 py-2.5 rounded-lg font-bold transition-all duration-200 text-sm ${searchMode === "code" ? "bg-[#1a1464] text-white" : "bg-gray-100 text-gray-600"}`}>
+              Por Código
+            </button>
+            <button onClick={() => setSearchMode("car")}
+              className={`flex-1 py-2.5 rounded-lg font-bold transition-all duration-200 text-sm ${searchMode === "car" ? "bg-[#1a1464] text-white" : "bg-gray-100 text-gray-600"}`}>
+              Por Veículo
+            </button>
+          </div>
+
+          {/* Quick Search Bar */}
+          <div className="mb-6">
+            <label className="text-sm font-bold text-gray-800 block mb-2">Busca Rápida (Marca, Modelo, Cor...)</label>
+            <div className="flex flex-col sm:flex-row gap-3">
+              <input
+                value={searchTerm}
+                onChange={e => setSearchTerm(e.target.value)}
+                placeholder="Digite o que procura..."
+                className="flex-1 border border-gray-300 rounded-lg px-4 py-3 text-sm font-semibold outline-none focus:ring-2 focus:ring-[#1a1464]/20 focus:border-[#1a1464]"
+              />
+              <button onClick={handleGlobalSearch}
+                className="bg-[#1a1464] text-white px-6 py-3 rounded-lg text-sm font-bold hover:bg-indigo-900 transition-colors">
+                {loading ? "Buscando..." : "Buscar"}
               </button>
             </div>
           </div>
-        ) : (
-          <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-            <div>
-              <label style={{ fontSize: 13, fontWeight: 700, color: "#333", display: "block", marginBottom: 8 }}>Marca</label>
-              <select value={selectedBrand} onChange={e => { setSelectedBrand(e.target.value); setSelectedModel(""); setSelectedYear(""); }} style={{ width: "100%", border: "1px solid #d1d5db", borderRadius: 8, padding: "12px", fontSize: 14, outline: "none" }}>
-                <option value="">Selecione a Marca</option>
-                {brands.map(b => <option key={b} value={b}>{b}</option>)}
-              </select>
-            </div>
-            <div>
-              <label style={{ fontSize: 13, fontWeight: 700, color: "#333", display: "block", marginBottom: 8 }}>Modelo</label>
-              <select value={selectedModel} onChange={e => { setSelectedModel(e.target.value); setSelectedYear(""); }} style={{ width: "100%", border: "1px solid #d1d5db", borderRadius: 8, padding: "12px", fontSize: 14, outline: "none", disabled: !selectedBrand }}>
-                <option value="">Selecione o Modelo</option>
-                {filteredModels.map(m => <option key={m} value={m}>{m}</option>)}
-              </select>
-            </div>
-            <div>
-              <label style={{ fontSize: 13, fontWeight: 700, color: "#333", display: "block", marginBottom: 8 }}>Ano / Versão</label>
-              <select value={selectedYear} onChange={e => setSelectedYear(e.target.value)} style={{ width: "100%", border: "1px solid #d1d5db", borderRadius: 8, padding: "12px", fontSize: 14, outline: "none", disabled: !selectedModel }}>
-                <option value="">Selecione o Ano</option>
-                {filteredYears && Object.keys(filteredYears).map(y => <option key={y} value={y}>{y}</option>)}
-              </select>
-            </div>
-            <button onClick={handleSearchByCar} style={{ background: "#1a1464", color: "white", border: "none", borderRadius: 8, padding: "14px", fontSize: 14, fontWeight: 700, cursor: "pointer", marginTop: 8 }}>
-              {loading ? "Buscando..." : "Encontrar Cor do Carro"}
-            </button>
-          </div>
-        )}
 
-        {result && (
-          <div style={{ marginTop: 24, animation: "fadeIn 0.3s ease-in" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12, color: "#166534", fontSize: 14, fontWeight: 700 }}>
-              <Check size={18} /> Cor Localizada com Sucesso!
-            </div>
-
-            <div style={{ display: "flex", gap: 20, alignItems: "center", padding: 20, background: "#f9fafb", borderRadius: 12, border: "1px solid #e5e7eb" }}>
-              <div style={{
-                width: 120,
-                height: 120,
-                borderRadius: 12,
-                background: result.hex,
-                border: "4px solid white",
-                boxShadow: "0 4px 12px rgba(0,0,0,0.2)",
-                flexShrink: 0
-              }}></div>
-              <div>
-                <div style={{ fontSize: 20, fontWeight: 800, color: "#1a1464", marginBottom: 4 }}>{result.name}</div>
-                <div style={{ fontSize: 13, color: "#666", lineHeight: 1.4 }}>{result.description}</div>
-                <div style={{ marginTop: 8, display: "inline-block", background: "#e5e7eb", padding: "2px 8px", borderRadius: 4, fontSize: 11, fontWeight: 600, color: "#374151" }}>
-                  Código: {searchMode === "code" ? code.toUpperCase() : "Encontrado via Modelo"}
-                </div>
+          {searchMode === "code" ? (
+            <div>
+              <label className="text-sm font-bold text-gray-800 block mb-2">Código da cor (Ex: NH731P)</label>
+              <div className="flex flex-col sm:flex-row gap-3">
+                <input
+                  value={code}
+                  onChange={e => setCode(e.target.value.toUpperCase())}
+                  placeholder="Digite o código aqui..."
+                  className="flex-1 border border-gray-300 rounded-lg px-4 py-3 text-sm font-semibold outline-none focus:ring-2 focus:ring-[#1a1464]/20 focus:border-[#1a1464]"
+                />
+                <button onClick={handleSearchByCode}
+                  className="bg-[#1a1464] text-white px-6 py-3 rounded-lg text-sm font-bold hover:bg-indigo-900 transition-colors">
+                  {loading ? "Buscando..." : "Buscar Cor"}
+                </button>
               </div>
             </div>
-            <p style={{ marginTop: 12, fontSize: 11, color: "#999", textAlign: "center", fontStyle: "italic" }}>
-              * Esta é uma simulação visual. Para acerto exato, leve a peça física para nossa loja.
-            </p>
-          </div>
-        )}
+          ) : (
+            <div className="flex flex-col gap-4">
+              <div>
+                <label className="text-sm font-bold text-gray-800 block mb-2">Marca</label>
+                <select
+                  value={selectedBrand}
+                  onChange={e => { setSelectedBrand(e.target.value); setSelectedModel(""); setSelectedYear(""); }}
+                  className="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-[#1a1464]/20 focus:border-[#1a1464]"
+                >
+                  <option value="">Selecione a Marca</option>
+                  {brands.map(b => <option key={b} value={b}>{b}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="text-sm font-bold text-gray-800 block mb-2">Modelo</label>
+                <select
+                  value={selectedModel}
+                  onChange={e => { setSelectedModel(e.target.value); setSelectedYear(""); }}
+                  className="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-[#1a1464]/20 focus:border-[#1a1464] disabled:bg-gray-100"
+                  disabled={!selectedBrand}
+                >
+                  <option value="">Selecione o Modelo</option>
+                  {filteredModels.map(m => <option key={m} value={m}>{m}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="text-sm font-bold text-gray-800 block mb-2">Ano / Versão</label>
+                <select
+                  value={selectedYear}
+                  onChange={e => setSelectedYear(e.target.value)}
+                  className="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-[#1a1464]/20 focus:border-[#1a1464] disabled:bg-gray-100"
+                  disabled={!selectedModel}
+                >
+                  <option value="">Selecione o Ano</option>
+                  {filteredYears && Object.keys(filteredYears).map(y => <option key={y} value={y}>{y}</option>)}
+                </select>
+              </div>
+              <button onClick={handleSearchByCar}
+                className="bg-[#1a1464] text-white py-4 rounded-lg text-sm font-bold hover:bg-indigo-900 transition-colors mt-2">
+                {loading ? "Buscando..." : "Encontrar Cor do Carro"}
+              </button>
+            </div>
+          )}
 
-        {!loading && (searchMode === "code" ? (code && !result) : (selectedBrand && selectedModel && selectedYear && !result)) && (
-           <div style={{ marginTop: 24, padding: 16, background: "#fef2f2", border: "1px solid #fca5a5", borderRadius: 12, fontSize: 13, color: "#991b1b", display: "flex", alignItems: "center", gap: 10 }}>
-             <AlertCircle size={18} />
-             <div>
-               <strong>Cor não encontrada.</strong><br />
-               Não localizamos a cor para as informações fornecidas. Por favor, verifique os dados ou fale com nossos especialistas.
-             </div>
-           </div>
-        )}
+          {result && (
+            <div className="mt-6 animate-in fade-in slide-in-from-bottom-4 duration-300">
+              <div className="flex items-center gap-2 mb-3 text-green-700 text-sm font-bold">
+                <Check size={18} /> Cor Localizada com Sucesso!
+              </div>
+              <div className="flex flex-col md:flex-row items-center gap-6 p-5 bg-gray-50 rounded-2xl border border-gray-200 text-center md:text-left">
+                <div
+                  className="w-24 h-24 md:w-32 md:h-32 rounded-2xl shadow-lg border-4 border-white shrink-0"
+                  style={{ backgroundColor: result.hex }}
+                />
+                <div>
+                  <h3 className="text-xl font-extrabold text-[#1a1464] mb-1">{result.name}</h3>
+                  <p className="text-sm text-gray-600 leading-relaxed mb-2">{result.description}</p>
+                  <span className="inline-block bg-gray-200 px-2 py-1 rounded text-[11px] font-bold text-gray-700 uppercase">
+                    Código: {searchMode === "code" ? code.toUpperCase() : "Encontrado via Modelo"}
+                  </span>
+                </div>
+              </div>
+              <p className="mt-3 text-[11px] text-gray-400 text-center italic">
+                * Esta é uma simulação visual. Para acerto exato, leve a peça física para nossa loja.
+              </p>
+            </div>
+          )}
+
+          {!loading && (searchMode === "code" ? (code && !result) : (selectedBrand && selectedModel && selectedYear && !result)) && (
+            <div className="mt-6 p-4 bg-red-50 border border-red-200 rounded-xl text-sm text-red-800 flex items-center gap-3">
+              <AlertCircle size={18} />
+              <div>
+                <strong className="font-bold">Cor não encontrada.</strong><br />
+                Não localizamos a cor para as informações fornecidas. Por favor, verifique os dados ou fale com nossos especialistas.
+              </div>
+            </div>
+          )}
+        </div>
       </div>
+
+      <SilverMascot result={result} />
     </div>
   )
 }
