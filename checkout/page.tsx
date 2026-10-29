@@ -133,10 +133,10 @@ export default function CheckoutPage() {
             {paymentResult.paymentMethod === 'pix' && (
               <div style={{ textAlign: "center", marginBottom: 24 }}>
                 <div style={{ fontSize: 14, fontWeight: 700, color: "#1a1464", marginBottom: 12 }}>Escaneie o QR Code para pagar:</div>
-                <img src={paymentResult.qrCode} alt="Pix QR Code" style={{ width: 200, height: 200, margin: "0 auto 16px", background: "white", padding: 8, border: "1px solid #ddd" }} />
+                <img src={(paymentResult as any).qr_code_base64 || (paymentResult as any).qr_code} alt="Pix QR Code" style={{ width: 200, height: 200, margin: "0 auto 16px", background: "white", padding: 8, border: "1px solid #ddd" }} />
                 <div style={{ fontSize: 12, color: "#666", marginBottom: 8 }}>Ou copie a chave Pix:</div>
                 <div style={{ background: "#f3f4f6", padding: "10px", borderRadius: 8, fontSize: 11, fontWeight: 600, color: "#444", border: "1px dashed #ccc", overflowX: "auto", whiteSpace: "nowrap" }}>
-                  {paymentResult.copyPaste}
+                  {(paymentResult as any).qr_code || "Chave não disponível"}
                 </div>
               </div>
             )}
@@ -144,7 +144,7 @@ export default function CheckoutPage() {
             {paymentResult.paymentMethod === 'boleto' && (
               <div style={{ textAlign: "center", marginBottom: 24 }}>
                 <div style={{ fontSize: 14, fontWeight: 700, color: "#1a1464", marginBottom: 12 }}>Seu boleto está pronto:</div>
-                <a href={paymentResult.boletoUrl} target="_blank" rel="noreferrer"
+                <a href={(paymentResult as any).ticket_url} target="_blank" rel="noreferrer"
                   style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, background: "#1a1464", color: "white", textDecoration: "none", padding: "14px 24px", borderRadius: 10, fontWeight: 700, fontSize: 14 }}>
                   <FileText size={18} /> Baixar PDF do Boleto
                 </a>
@@ -201,6 +201,12 @@ export default function CheckoutPage() {
                 <label style={{ fontSize: 12, fontWeight: 600, color: "#666" }}>Telefone</label>
                 <input value={userData.phone} onChange={e => setUserData({...userData, phone: e.target.value})} placeholder="(19) 99999-9999"
                   maxLength={15}
+                  style={{ border: "1px solid #d1d5db", borderRadius: 8, padding: "10px 12px", fontSize: 14, outline: "none" }} />
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                <label style={{ fontSize: 12, fontWeight: 600, color: "#666" }}>CPF</label>
+                <input value={(userData as any).cpf || ""} onChange={e => setUserData({...userData, ...{cpf: e.target.value}} as any)} placeholder="000.000.000-00"
+                  maxLength={14}
                   style={{ border: "1px solid #d1d5db", borderRadius: 8, padding: "10px 12px", fontSize: 14, outline: "none" }} />
               </div>
               <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
