@@ -105,22 +105,26 @@ export default function CheckoutPage() {
     setLoading(true)
 
     try {
-      const response = await fetch("/api/checkout/create-payment", {
+      const response = await fetch("http://localhost:4000/api/checkout/create-payment", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           cart,
           userData,
-          paymentMethod,
         }),
       });
 
       const data = await response.json();
 
       if (data.ok) {
-        setPaymentResult(data.payment);
-        localStorage.removeItem("silver-cart");
-        localStorage.removeItem("cart");
+        // O Mercado Pago retorna um link (init_point) para o checkout seguro
+        if (data.init_point) {
+          localStorage.removeItem("silver-cart");
+          localStorage.removeItem("cart");
+          window.location.href = data.init_point;
+        } else {
+          alert("Erro: Link de pagamento não recebido.");
+        }
       } else {
         alert("Erro ao processar pagamento: " + (data.error || "Erro desconhecido"));
       }
