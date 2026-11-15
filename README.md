@@ -28,17 +28,21 @@ NEXT_PUBLIC_APP_URL=http://localhost:3000
 
 ### Configuração do Supabase
 
-1. No painel do Supabase, abra **SQL Editor > New query**.
-2. Abra [supabase_setup.sql](./supabase_setup.sql), copie todo o conteúdo e execute uma vez. O script cria as tabelas, importa o catálogo de exemplo e configura RLS para permitir leitura pública do catálogo sem permitir escrita pública nos pedidos.
-3. Em **Project Settings > API**, copie a Project URL, a chave `anon`/publishable e a chave `service_role`/secret para `.env.local`:
+1. Em **Project Settings > API**, copie a Project URL e a chave pública `anon`/publishable para `.env.local`:
 
 ```env
 NEXT_PUBLIC_SUPABASE_URL=https://SEU_PROJETO.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=SUA_CHAVE_PUBLICA
-SUPABASE_SERVICE_ROLE_KEY=SUA_CHAVE_SECRETA_DO_SERVIDOR
 ```
 
-Nunca use a chave `service_role` no navegador nem com prefixo `NEXT_PUBLIC_`. Depois de alterar `.env.local`, reinicie o servidor local.
+2. Em **Authentication > URL Configuration**, configure:
+   - **Site URL** com a URL principal do site (por exemplo, `http://localhost:3000` durante o desenvolvimento).
+   - **Redirect URLs** com `http://localhost:3000/login` e a URL de produção terminada em `/login` (por exemplo, `https://seu-dominio.com/login`).
+3. Em **Authentication > Providers**, deixe **Email** habilitado. O cadastro envia um link de confirmação para `/login`; o login só funciona depois da confirmação se a confirmação de e-mail estiver habilitada.
+4. Reinicie o servidor local depois de salvar o `.env.local`. No Vercel, adicione `NEXT_PUBLIC_SUPABASE_URL` e `NEXT_PUBLIC_SUPABASE_ANON_KEY` nas variáveis de ambiente de **Production** e faça um novo deploy.
+5. Para configurar também o banco e os pedidos da loja, abra **SQL Editor > New query**, execute o conteúdo de [supabase_setup.sql](./supabase_setup.sql) e adicione a chave `service_role` como `SUPABASE_SERVICE_ROLE_KEY` somente no servidor/Vercel.
+
+Nunca use a chave `service_role` no navegador nem com prefixo `NEXT_PUBLIC_`. A autenticação básica usa Supabase Auth e não exige executar o SQL de catálogo/pedidos.
 
 ### Webhook do Mercado Pago
 

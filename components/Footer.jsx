@@ -1,6 +1,6 @@
 "use client"
 import React from "react"
-import { MessageCircle, Instagram, Facebook } from "lucide-react"
+import { MessageCircle } from "lucide-react"
 
 const Footer = () => (
   <footer style={{ background: "#0f0c38", color: "white", padding: "24px 16px 16px" }}>
@@ -14,12 +14,6 @@ const Footer = () => (
         style={{ width: 32, height: 32, borderRadius: "50%", background: "rgba(255,255,255,0.1)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", textDecoration: "none" }}>
         <MessageCircle size={16} color="white" />
       </a>
-      <div style={{ width: 32, height: 32, borderRadius: "50%", background: "rgba(255,255,255,0.1)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
-        <Instagram size={16} color="white" />
-      </div>
-      <div style={{ width: 32, height: 32, borderRadius: "50%", background: "rgba(255,255,255,0.1)", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}>
-        <Facebook size={16} color="white" />
-      </div>
     </div>
     <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 16 }}>
       <div>
