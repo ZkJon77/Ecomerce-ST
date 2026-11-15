@@ -142,8 +142,30 @@
 
   body {
     @apply bg-background text-foreground;
+    background: #f7f8fc;
+    color: #202638;
+    font-family: Arial, Helvetica, sans-serif;
+    overflow-x: hidden;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+  }
+
+  button,
+  input,
+  select,
+  textarea {
+    font: inherit;
+  }
+
+  button:focus-visible,
+  a:focus-visible {
+    outline: 2px solid #5366c4;
+    outline-offset: 3px;
+  }
+
+  ::selection {
+    background: #dce2ff;
+    color: #1a1464;
   }
 
   /* Inputs com estilo Silver Tintas */
@@ -415,4 +437,43 @@
 
 .toast-error {
   background: oklch(0.55 0.22 27);
+}
+
+@media (max-width: 1100px) {
+  .site-header-nav {
+    display: none !important;
+  }
+
+  .site-header-inner {
+    gap: 14px !important;
+    padding: 12px 20px !important;
+  }
+}
+
+@media (max-width: 600px) {
+  .site-header-inner {
+    gap: 10px !important;
+    padding: 10px 14px !important;
+  }
+
+  .site-header-search {
+    min-width: 0;
+  }
+
+  .site-header-search input {
+    min-width: 0;
+  }
+
+  .site-header-actions {
+    gap: 10px !important;
+  }
+
+  .site-header-color {
+    padding: 7px 10px !important;
+    font-size: 0 !important;
+  }
+
+  .site-header-account {
+    display: none;
+  }
 }

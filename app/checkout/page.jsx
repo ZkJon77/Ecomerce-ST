@@ -105,19 +105,19 @@ export default function CheckoutPage() {
     setLoading(true)
 
     try {
-      const response = await fetch("http://localhost:4000/api/checkout/create-payment", {
+      const response = await fetch("/api/checkout/create-payment", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           cart,
           userData,
+          paymentMethod,
         }),
       });
 
       const data = await response.json();
 
       if (data.ok) {
-        // O Mercado Pago retorna um link (init_point) para o checkout seguro
         if (data.init_point) {
           localStorage.removeItem("silver-cart");
           localStorage.removeItem("cart");

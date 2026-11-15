@@ -1,6 +1,6 @@
 "use client";
 import React from "react";
-import { Heart, ShoppingCart } from "lucide-react";
+import { Heart, ShoppingCart, Star } from "lucide-react";
 import { Product } from "@/lib/constants";
 
 // FeaturedProductsProps: { products: Product[], onAdd: (p: Product) => void, favorites: string[], onToggleFavorite: (id: string) => void, onProductClick: (id: string) => void }
@@ -8,7 +8,7 @@ import { Product } from "@/lib/constants";
 const StarRow = ({ count = 5, size = 12 }) => (
   <div style={{ display: "flex", gap: 1 }}>
     {[...Array(5)].map((_, i) => (
-      <span key={i} style={{ color: i < count ? "#f59e0b" : "#d1d5db", fontSize: size }}>★</span>
+      <Star key={i} size={size} fill={i < count ? "#f59e0b" : "none"} color={i < count ? "#f59e0b" : "#d1d5db"} />
     ))}
   </div>
 );

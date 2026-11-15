@@ -1,6 +1,6 @@
 "use client"
 import React from "react"
-import { ChevronRight, Palette } from "lucide-react"
+import { ChevronRight, Palette, Camera } from "lucide-react"
 
 const ColorBanner = ({ setPage }) => (
   <div style={{ margin: "0 12px 16px", borderRadius: 12, overflow: "hidden", border: "1px solid #e5e7eb", background: "#f0f4ff", position: "relative" }}>
@@ -27,13 +27,13 @@ const ColorBanner = ({ setPage }) => (
           <button onClick={() => setPage("cor")} style={{ background: "#1a1464", color: "white", border: "none", borderRadius: 20, padding: "6px 14px", fontSize: 11, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: 5 }}>
             Código <ChevronRight size={12} />
           </button>
-          <button onClick={() => setPage("simulador")} style={{ background: "#6d28d9", color: "white", border: "none", borderRadius: 20, padding: "6px 14px", fontSize: 11, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: 5 }}>
+          <button onClick={() => setPage("simulador")} style={{ background: "#2d3a8c", color: "white", border: "none", borderRadius: 20, padding: "6px 14px", fontSize: 11, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: 5 }}>
             Simular <Palette size={10} />
           </button>
         </div>
       </div>
     </div>
-    <div style={{ background: "#dbeafe", padding: "6px 14px", fontSize: 10, color: "#1e40af" }}>📸 @silverpintura</div>
+    <div style={{ display: "flex", alignItems: "center", gap: 6, background: "#dbeafe", padding: "6px 14px", fontSize: 10, color: "#1e40af" }}><Camera size={13} /> @silverpintura</div>
   </div>
 )
 

@@ -1,6 +1,6 @@
 "use client"
 import React, { useState } from "react"
-import { Calculator, Plus, Minus, X, Check, RotateCcw, Info } from "lucide-react"
+import { Calculator, Plus, Minus, X, Check, RotateCcw, Info, Ruler, DoorOpen, PaintBucket, ShieldCheck, Paintbrush, Blocks, CircleDollarSign, Lightbulb } from "lucide-react"
 import { calculatePaint, Wall, Opening, CalculationResult } from "@/lib/calc-utils"
 
 // WallInput documentation: { width: string, height: string }
@@ -56,7 +56,7 @@ const CalculatorPage = () => {
 
   return (
     <div style={{ background: "#f7f8fc", minHeight: "100vh", padding: "0 0 80px" }}>
-      <div style={{ background: "linear-gradient(135deg, #064e3b 0%, #065f46 100%)", padding: "24px 16px 20px" }}>
+      <div style={{ background: "linear-gradient(135deg, #1a1464 0%, #2d3a8c 100%)", padding: "24px 16px 20px" }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
             <Calculator size={22} color="#34d399" />
@@ -72,7 +72,7 @@ const CalculatorPage = () => {
       <div style={{ padding: 16 }}>
         <div style={{ background: "white", borderRadius: 14, padding: 16, marginBottom: 16, boxShadow: "0 1px 8px rgba(0,0,0,0.06)" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
-            <h3 style={{ fontSize: 14, fontWeight: 800, color: "#1a1464", margin: 0 }}>📐 Dimensões das Paredes</h3>
+            <h3 style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 14, fontWeight: 800, color: "#1a1464", margin: 0 }}><Ruler size={16} /> Dimensões das Paredes</h3>
             <button onClick={addWall} style={{ background: "#1a1464", color: "white", border: "none", borderRadius: 8, padding: "4px 12px", fontSize: 12, fontWeight: 600, cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}>
               <Plus size={14} /> Adicionar Parede
             </button>
@@ -101,7 +101,7 @@ const CalculatorPage = () => {
             <input type="number" value={ceilingArea || ""} onChange={e => setCeilingArea(parseFloat(e.target.value) || 0)} placeholder="Ex: 15.0"
               style={{ width: "100%", border: "1px solid #d1d5db", borderRadius: 8, padding: "10px 12px", fontSize: 14, outline: "none", boxSizing: "border-box" }} />
           </div>
-          <h3 style={{ fontSize: 14, fontWeight: 800, color: "#1a1464", marginBottom: 12 }}>🪟 Descontar aberturas</h3>
+          <h3 style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 14, fontWeight: 800, color: "#1a1464", marginBottom: 12 }}><DoorOpen size={16} /> Descontar aberturas</h3>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 14 }}>
             <div style={{ background: "#f9fafb", padding: "12px", borderRadius: 10, border: "1px solid #e5e7eb" }}>
               <label style={{ fontSize: 12, fontWeight: 600, color: "#555", display: "block", marginBottom: 6 }}>Portas</label>
@@ -139,8 +139,8 @@ const CalculatorPage = () => {
             </select>
           </div>
           <button onClick={calculate}
-            style={{ width: "100%", background: "linear-gradient(135deg, #064e3b, #065f46)", color: "white", border: "none", borderRadius: 10, padding: "14px", fontSize: 14, fontWeight: 800, cursor: "pointer" }}>
-            🧮 Calcular
+            style={{ width: "100%", background: "linear-gradient(135deg, #1a1464, #2d3a8c)", color: "white", border: "none", borderRadius: 10, padding: "14px", fontSize: 14, fontWeight: 800, cursor: "pointer", display: "flex", justifyContent: "center", alignItems: "center", gap: 8 }}>
+            <Calculator size={17} /> Calcular
           </button>
         </div>
         {result && (
@@ -160,11 +160,11 @@ const CalculatorPage = () => {
 
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 14 }}>
               {[
-                { label: "Tinta Necessária", value: result.totalLiters + " L", icon: "🪣" },
-                { label: "Margem de Segurança", value: "+" + result.wasteAmount + " L", icon: "🛡️" },
+                { label: "Tinta Necessária", value: result.totalLiters + " L", icon: <PaintBucket size={20} /> },
+                { label: "Margem de Segurança", value: "+" + result.wasteAmount + " L", icon: <ShieldCheck size={20} /> },
               ].map(item => (
                 <div key={item.label} style={{ background: "#f0fdf4", borderRadius: 10, padding: "12px 10px", textAlign: "center", border: "1px solid #86efac" }}>
-                  <div style={{ fontSize: 20, marginBottom: 4 }}>{item.icon}</div>
+                  <div style={{ display: "flex", justifyContent: "center", color: "#1a1464", marginBottom: 6 }}>{item.icon}</div>
                   <div style={{ fontSize: 16, fontWeight: 900, color: "#1a1464" }}>{item.value}</div>
                   <div style={{ fontSize: 10, color: "#666", marginTop: 2 }}>{item.label}</div>
                 </div>
@@ -173,11 +173,11 @@ const CalculatorPage = () => {
 
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 14 }}>
               {[
-                { label: "Selador (Primer)", value: result.primerCans, icon: "🖌️" },
-                { label: "Massa Corrida", value: result.puttyCans, icon: "🧱" },
+                { label: "Selador (Primer)", value: result.primerCans, icon: <Paintbrush size={20} /> },
+                { label: "Massa Corrida", value: result.puttyCans, icon: <Blocks size={20} /> },
               ].map(item => (
                 <div key={item.label} style={{ background: "#fdf2f8", borderRadius: 10, padding: "12px 10px", textAlign: "center", border: "1px solid #fbcfe8" }}>
-                  <div style={{ fontSize: 20, marginBottom: 4 }}>{item.icon}</div>
+                  <div style={{ display: "flex", justifyContent: "center", color: "#1a1464", marginBottom: 6 }}>{item.icon}</div>
                   <div style={{ fontSize: 16, fontWeight: 900, color: "#1a1464" }}>{item.value}</div>
                   <div style={{ fontSize: 10, color: "#666", marginTop: 2 }}>{item.label}</div>
                 </div>
@@ -197,11 +197,11 @@ const CalculatorPage = () => {
               </div>
             </div>
             <div style={{ background: "#fffbeb", border: "1px solid #fcd34d", borderRadius: 8, padding: "16px", fontSize: 14, color: "#78350f", textAlign: "center", marginBottom: 16 }}>
-              <div style={{ fontWeight: 800, marginBottom: 4 }}>💰 Estimativa de Investimento: { "R$ " + result.estimatedCost.toLocaleString('pt-BR', { minimumFractionDigits: 2 }) }</div>
+              <div style={{ display: "flex", justifyContent: "center", alignItems: "center", gap: 6, fontWeight: 800, marginBottom: 4 }}><CircleDollarSign size={17} /> Estimativa de Investimento: { "R$ " + result.estimatedCost.toLocaleString('pt-BR', { minimumFractionDigits: 2 }) }</div>
               <div style={{ fontSize: 11 }}>Cálculo baseado em preços médios de mercado para as latas sugeridas.</div>
             </div>
             <div style={{ background: "#fffbeb", border: "1px solid #fcd34d", borderRadius: 8, padding: "10px 12px", fontSize: 11, color: "#78350f" }}>
-              💡 A margem de segurança de 10% foi incluída para evitar a falta de tinta durante a aplicação.
+              <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}><Lightbulb size={14} /> A margem de segurança de 10% foi incluída para evitar a falta de tinta durante a aplicação.</span>
             </div>
           </div>
         )}

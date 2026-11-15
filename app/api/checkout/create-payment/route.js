@@ -1,73 +1,147 @@
 import { NextResponse } from 'next/server';
-import { supabase } from '../../../../lib/supabase';
+import { MercadoPagoConfig, Preference } from 'mercadopago';
+import { hasSupabaseAdminConfig, supabaseAdmin } from '../../../../lib/supabase';
 import { sendOrderNotification } from '../../../../lib/whatsapp';
+
+function getPublicBaseUrl() {
+  const configuredUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_SITE_URL;
+  const vercelUrl = process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null;
+  const value = configuredUrl || vercelUrl;
+
+  if (!value) return null;
+
+  try {
+    const url = new URL(value);
+    if (url.protocol !== 'https:' || ['localhost', '127.0.0.1'].includes(url.hostname)) return null;
+    return url.origin;
+  } catch {
+    return null;
+  }
+}
 
 export async function POST(req) {
   try {
     const body = await req.json();
-    const { cart, userData, paymentMethod } = body;
-    if (!cart || !userData) return NextResponse.json({ error: 'Missing required data' }, { status: 400 });
+    const { cart = [], userData = {}, paymentMethod = 'pix' } = body;
 
-    const amount = cart.reduce((sum, item) => sum + (item.price || 0) * (item.qty || 0), 0);
-
-    // 1. Salvar o Pedido no Supabase
-    const { data: order, error: orderError } = await supabase
-      .from('orders')
-      .insert({
-        customer_name: userData.name,
-        customer_email: userData.email,
-        customer_phone: userData.phone,
-        customer_address: userData.address,
-        total_amount: amount,
-        payment_method: paymentMethod,
-        status: 'pending',
-      })
-      .select()
-      .single();
-
-    if (orderError) throw orderError;
-
-    // 2. Salvar os Itens do Pedido
-    const orderItems = cart.map((item) => ({
-      order_id: order.id,
-      product_id: item.id,
-      quantity: item.qty,
-      price: item.price,
-    }));
-
-    const { error: itemsError } = await supabase.from('order_items').insert(orderItems);
-    if (itemsError) throw itemsError;
-
-    // 3. Enviar Notificação via WhatsApp
-    await sendOrderNotification({
-      name: userData.name,
-      phone: userData.phone,
-      address: userData.address,
-      total: amount,
-      paymentMethod,
-    }, cart);
-
-    // 4. Retornar resposta de pagamento (mantendo a lógica de mock para o frontend)
-    const paymentId = `pay_${Math.random().toString(36).substring(2, 11)}`;
-    const response = {
-      id: paymentId,
-      status: 'pending',
-      amount,
-      paymentMethod,
-    };
-
-    if (paymentMethod === 'pix') {
-      response.qrCode = 'https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=PIX-MOCK-DATA';
-      response.copyPaste = '00020126360014BR.GOV.BCB.PIX0000000000';
-    } else if (paymentMethod === 'boleto') {
-      response.boletoUrl = 'https://example.com/boleto-pdf';
-    } else if (paymentMethod === 'card') {
-      response.status = 'approved';
+    if (!Array.isArray(cart) || !cart.length) {
+      return NextResponse.json({ error: 'Carrinho vazio' }, { status: 400 });
     }
 
-    return NextResponse.json({ ok: true, payment: response, orderId: order.id });
+    if (!userData.name || !userData.email || !userData.phone || !userData.address) {
+      return NextResponse.json({ error: 'Dados do cliente incompletos' }, { status: 400 });
+    }
+
+    const accessToken = process.env.MP_ACCESS_TOKEN;
+    if (!accessToken) {
+      return NextResponse.json({
+        error: 'MP_ACCESS_TOKEN não configurado. Defina a variável no ambiente antes de iniciar a aplicação.'
+      }, { status: 500 });
+    }
+
+    const amount = cart.reduce((sum, item) => sum + Number(item.price || 0) * Number(item.qty || 1), 0);
+    const baseUrl = getPublicBaseUrl();
+
+    let orderId = null;
+    if (hasSupabaseAdminConfig && supabaseAdmin) {
+      try {
+        const { data: order, error: orderError } = await supabaseAdmin
+          .from('orders')
+          .insert({
+            customer_name: userData.name,
+            customer_email: userData.email,
+            customer_phone: userData.phone,
+            customer_cpf: userData.cpf || null,
+            customer_address: userData.address,
+            total_amount: amount,
+            payment_method: paymentMethod,
+            status: 'pending',
+          })
+          .select()
+          .single();
+
+        if (orderError) throw orderError;
+        if (!order) throw new Error('Supabase não retornou o pedido criado.');
+        orderId = order.id;
+
+        const orderItems = cart.map((item) => ({
+          order_id: order.id,
+          product_id: /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(item.id || '') ? item.id : null,
+          product_name: item.name || 'Produto',
+          quantity: Number(item.qty || 1),
+          price: Number(item.price || 0),
+        }));
+
+        const { error: itemsError } = await supabaseAdmin.from('order_items').insert(orderItems);
+        if (itemsError) throw itemsError;
+      } catch (dbError) {
+        console.error('Failed to save checkout order:', dbError);
+        throw new Error('Não foi possível registrar o pedido. Verifique a configuração do Supabase.');
+      }
+    } else {
+      console.warn('Supabase service role is not configured; checkout will not persist the order.');
+    }
+
+    const client = new MercadoPagoConfig({ accessToken });
+    const preference = new Preference(client);
+
+    const preferenceBody = {
+      items: cart.map((item) => ({
+        id: String(item.id || item.productId || item.name),
+        title: item.name || 'Produto',
+        quantity: Number(item.qty || 1),
+        unit_price: Number(item.price || 0),
+        currency_id: 'BRL',
+      })),
+      payer: {
+        name: userData.name,
+        email: userData.email,
+      },
+      metadata: {
+        orderId: orderId || 'guest-order',
+        paymentMethod,
+      },
+    };
+    if (orderId) preferenceBody.external_reference = orderId;
+
+    if (baseUrl) {
+      preferenceBody.back_urls = {
+        success: `${baseUrl}/checkout/success`,
+        failure: `${baseUrl}/checkout/failure`,
+        pending: `${baseUrl}/checkout/pending`,
+      };
+      preferenceBody.notification_url = `${baseUrl}/api/webhooks/payment`;
+      preferenceBody.auto_return = 'approved';
+    }
+
+    const preferenceResult = await preference.create({ body: preferenceBody });
+
+    try {
+      await sendOrderNotification(
+        {
+          name: userData.name,
+          phone: userData.phone,
+          address: userData.address,
+          total: amount,
+          paymentMethod,
+        },
+        cart,
+      );
+    } catch (notificationError) {
+      console.warn('WhatsApp notification skipped:', notificationError.message || notificationError);
+    }
+
+    return NextResponse.json({
+      ok: true,
+      init_point: preferenceResult.init_point,
+      preference_id: preferenceResult.id,
+      orderId,
+    });
   } catch (error) {
     console.error('Checkout Error:', error);
-    return NextResponse.json({ error: error.message || 'Internal Server Error' }, { status: 500 });
+    return NextResponse.json(
+      { error: error.message || 'Erro interno no servidor' },
+      { status: 500 },
+    );
   }
 }

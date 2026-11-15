@@ -8,7 +8,7 @@ const KitsPage = ({ kits, onAddKit }) => {
   if (!kits || kits.length === 0) {
     return (
       <div style={{ textAlign: "center", padding: "60px 0", color: "#999" }}>
-        <div style={{ fontSize: 48, marginBottom: 16 }}>📦</div>
+        <Package size={42} style={{ margin: "0 auto 16px", color: "#1a1464" }} />
         <div style={{ fontSize: 18, fontWeight: 500 }}>Nenhum kit disponível no momento.</div>
       </div>
     );
@@ -39,7 +39,7 @@ const KitsPage = ({ kits, onAddKit }) => {
           return (
             <div key={kit.id} style={{ background: "white", borderRadius: 14, overflow: "hidden", boxShadow: "0 2px 12px rgba(0,0,0,0.08)", border: "1px solid #e5e7eb" }}>
               <div style={{ background: "#1a1464", padding: "20px 20px 16px", display: "flex", alignItems: "center", gap: 12 }}>
-                <div style={{ fontSize: 42 }}>📦</div>
+                <Package size={32} color="#fbbf24" />
                 <div>
                   <div style={{ fontSize: 18, fontWeight: 800, color: "white" }}>{kit.name}</div>
                   <div style={{ fontSize: 12, color: "rgba(255,255,255,0.8)", marginTop: 2 }}>{kit.description}</div>

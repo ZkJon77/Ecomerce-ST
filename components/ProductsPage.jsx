@@ -1,12 +1,12 @@
 "use client"
 import React, { useState } from "react"
-import { Heart, ShoppingCart, ArrowLeft } from "lucide-react"
+import { Heart, ShoppingCart, ArrowLeft, Search, Star } from "lucide-react"
 import { Product } from "@/lib/constants"
 
 const StarRow = ({ count = 5, size = 12 }) => (
   <div style={{ display: "flex", gap: 1 }}>
     {[...Array(5)].map((_, i) => (
-      <span key={i} style={{ color: i < count ? "#f59e0b" : "#d1d5db", fontSize: size }}>★</span>
+      <Star key={i} size={size} fill={i < count ? "#f59e0b" : "none"} color={i < count ? "#f59e0b" : "#d1d5db"} />
     ))}
   </div>
 )
@@ -73,7 +73,7 @@ const ProductsPage = ({ onAdd, favorites, onToggleFavorite, initialCategory, sea
 
       {filtered.length === 0 ? (
         <div style={{ textAlign: "center", padding: "60px 0", color: "#999" }}>
-          <div style={{ fontSize: 48, marginBottom: 16 }}>🔍</div>
+          <Search size={42} style={{ margin: "0 auto 16px", color: "#64748b" }} />
           <div style={{ fontSize: 18, fontWeight: 500 }}>Nenhum produto encontrado com esses filtros.</div>
         </div>
       ) : (

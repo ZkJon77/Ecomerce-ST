@@ -1,6 +1,6 @@
 "use client"
 import React from "react"
-import { ShoppingCart, ArrowLeft, Star, ShieldCheck, Droplets, Zap } from "lucide-react"
+import { ShoppingCart, ArrowLeft, Star, ShieldCheck, Droplets, Zap, XCircle, Package } from "lucide-react"
 import { Product } from "@/lib/constants"
 
 // ProductDetailsPageProps: { productId: string, onAdd: (p: Product) => void, setPage: (p: string) => void, products: Product[] }
@@ -11,7 +11,7 @@ const ProductDetailsPage = ({ productId, onAdd, setPage, products }) => {
   if (!product) {
     return (
       <div style={{ textAlign: "center", padding: "60px", color: "#666" }}>
-        <div style={{ fontSize: 48, marginBottom: 16 }}>❌</div>
+        <XCircle size={42} style={{ margin: "0 auto 16px", color: "#64748b" }} />
         <div style={{ fontSize: 18, fontWeight: 500 }}>Produto não encontrado.</div>
         <button onClick={() => setPage("produtos")} style={{ marginTop: 20, padding: "10px 20px", borderRadius: 8, background: "#1a1464", color: "white", border: "none", cursor: "pointer" }}>
           Voltar para Produtos
@@ -83,7 +83,7 @@ const ProductDetailsPage = ({ productId, onAdd, setPage, products }) => {
               </div>
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "16px", background: "#f0f4ff", borderRadius: 12, border: "1px solid #dbeafe" }}>
-              <div style={{ fontSize: 20 }}>📦</div>
+              <Package size={20} color="#1a1464" />
               <div>
                 <div style={{ fontSize: 11, fontWeight: 700, color: "#666", textTransform: "uppercase" }}>Envio</div>
                 <div style={{ fontSize: 14, fontWeight: 700, color: "#1a1464" }}>Pronta Entrega</div>

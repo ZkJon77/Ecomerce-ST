@@ -34,13 +34,13 @@ export const Header = ({ cartCount, onCartOpen, onGoHome, onGoCor, currentPage, 
 
   return (
     <header style={{ background: "#1a1464", padding: "0", position: "sticky", top: 0, zIndex: 100, boxShadow: "0 2px 8px rgba(0,0,0,0.3)" }}>
-      <div style={{ maxWidth: 1400, margin: "0 auto", padding: "12px 32px", display: "flex", alignItems: "center", gap: 20 }}>
-        <div onClick={onGoHome} style={{ cursor: "pointer", flexShrink: 0 }}>
+      <div className="site-header-inner" style={{ maxWidth: 1400, margin: "0 auto", padding: "12px 32px", display: "flex", alignItems: "center", gap: 20 }}>
+        <div className="site-header-brand" onClick={onGoHome} style={{ cursor: "pointer", flexShrink: 0 }}>
           <div style={{ fontFamily: "Georgia, serif", fontStyle: "italic", fontWeight: 900, fontSize: 32, color: "white", lineHeight: 1, letterSpacing: "-1px" }}>Silver</div>
           <div style={{ fontSize: 9, color: "rgba(255,255,255,0.5)", letterSpacing: 3, textTransform: "uppercase" }}>tintas</div>
         </div>
 
-        <div style={{ flex: 1, maxWidth: 600, position: "relative" }}>
+        <div className="site-header-search" style={{ flex: 1, maxWidth: 600, position: "relative" }}>
           <div style={{ background: "white", borderRadius: 6, display: "flex", alignItems: "center", padding: "8px 14px", gap: 8 }}>
             <Search size={16} color="#999" />
             <input
@@ -88,7 +88,7 @@ export const Header = ({ cartCount, onCartOpen, onGoHome, onGoCor, currentPage, 
           )}
         </div>
 
-        <div style={{ display: "flex", gap: 2, alignItems: "center" }}>
+        <div className="site-header-nav" style={{ display: "flex", gap: 2, alignItems: "center" }}>
           {[
             { id: "home", label: "Início" },
             { id: "produtos", label: "Produtos" },
@@ -103,12 +103,12 @@ export const Header = ({ cartCount, onCartOpen, onGoHome, onGoCor, currentPage, 
             </button>
           ))}
         </div>
-        <div style={{ display: "flex", gap: 16, alignItems: "center", flexShrink: 0 }}>
-          <button onClick={onGoCor}
+        <div className="site-header-actions" style={{ display: "flex", gap: 16, alignItems: "center", flexShrink: 0 }}>
+          <button className="site-header-color" onClick={onGoCor}
             style={{ display: "flex", alignItems: "center", gap: 6, background: "rgba(255,255,255,0.15)", border: "1px solid rgba(255,255,255,0.3)", borderRadius: 20, padding: "7px 16px", color: "white", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
             <Paintbrush size={14} /> Consultar Cor
           </button>
-          <User size={22} color="white" style={{ cursor: "pointer" }} onClick={() => router.push('/login')} />
+          <User className="site-header-account" size={22} color="white" style={{ cursor: "pointer" }} onClick={() => router.push('/login')} />
           <div style={{ position: "relative", cursor: "pointer" }} onClick={onCartOpen}>
             <ShoppingCart size={22} color="white" />
             {cartCount > 0 && (

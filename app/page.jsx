@@ -97,7 +97,7 @@ export default function App() {
       stars: 5
     }
     setCart(prev => [...prev, { ...kitProduct, qty: 1 }])
-    showToast("Kit adicionado ao carrinho! 🎉")
+    showToast("Kit adicionado ao carrinho!")
   }, [showToast])
 
   const toggleFavorite = useCallback((id) => {

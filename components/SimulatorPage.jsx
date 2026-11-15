@@ -1,6 +1,6 @@
 "use client"
 import React, { useState, useEffect, useRef } from "react"
-import { Palette, Layers, Upload, X, Info, Check } from "lucide-react"
+import { Palette, Layers, Upload, X, Info, Check, House } from "lucide-react"
 import { COLOR_PALETTE } from "@/lib/constants"
 import { getHarmonies, ColorPalette, hexToHsl, hslToHex } from "@/lib/color-utils"
 
@@ -132,7 +132,7 @@ const SimulatorPage = () => {
 
   return (
     <div style={{ background: "#f7f8fc", minHeight: "100vh", padding: "0 0 80px", fontFamily: "system-ui, -apple-system, sans-serif" }}>
-      <div style={{ background: "linear-gradient(135deg, #1a1464 0%, #4c1d95 100%)", padding: "32px 16px 24px", color: "white", textAlign: "center" }}>
+      <div style={{ background: "linear-gradient(135deg, #1a1464 0%, #2d3a8c 100%)", padding: "32px 16px 24px", color: "white", textAlign: "center" }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 10, marginBottom: 8 }}>
           <Palette size={24} color="#fbbf24" />
           <h1 style={{ fontSize: 28, fontWeight: 800, margin: 0 }}>Catálogo de Cores</h1>
@@ -158,7 +158,7 @@ const SimulatorPage = () => {
               ) : (
                 <div style={{ width: "100%", height: "100%", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", background: selectedColor.hex, transition: "background 0.4s" }}>
                   <div style={{ background: "rgba(255,255,255,0.9)", borderRadius: 16, padding: "24px 32px", textAlign: "center", boxShadow: "0 4px 12px rgba(0,0,0,0.1)" }}>
-                    <div style={{ fontSize: 40, marginBottom: 8 }}>🏠</div>
+                    <House size={36} style={{ margin: "0 auto 8px", color: "#1a1464" }} />
                     <div style={{ fontSize: 14, color: "#666", fontWeight: 600 }}>Visualização de Cor</div>
                     <div style={{ fontSize: 20, color: "#1a1464", fontWeight: 800, marginTop: 4 }}>{selectedColor.name}</div>
                   </div>

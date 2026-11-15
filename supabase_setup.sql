@@ -1,8 +1,10 @@
 -- =============================================================================
 -- SILVER TINTAS - SUPABASE DATABASE SETUP
 -- Este arquivo contém todos os scripts necessários para configurar o banco de dados.
--- Execute cada seção no SQL Editor do Supabase.
+-- Execute este arquivo uma vez no SQL Editor do Supabase.
 -- =============================================================================
+
+BEGIN;
 
 -- -----------------------------------------------------------------------------
 -- SEÇÃO 1: CRIAÇÃO DAS TABELAS (ESTRUTURA)
@@ -54,6 +56,7 @@ CREATE TABLE IF NOT EXISTS order_items (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   order_id UUID REFERENCES orders(id) ON DELETE CASCADE,
   product_id UUID REFERENCES products(id),
+  product_name TEXT NOT NULL DEFAULT 'Produto',
   quantity INTEGER NOT NULL,
   price NUMERIC NOT NULL
 );
@@ -65,6 +68,38 @@ CREATE TABLE IF NOT EXISTS kit_items (
   product_id UUID REFERENCES products(id),
   quantity INTEGER DEFAULT 1
 );
+
+-- Compatibilidade para projetos que já tenham criado as tabelas.
+ALTER TABLE products ADD COLUMN IF NOT EXISTS image_url TEXT;
+ALTER TABLE products ADD COLUMN IF NOT EXISTS category_id UUID REFERENCES categories(id);
+ALTER TABLE products ADD COLUMN IF NOT EXISTS brand_id UUID REFERENCES brands(id);
+ALTER TABLE products ADD COLUMN IF NOT EXISTS stars NUMERIC;
+ALTER TABLE products ADD COLUMN IF NOT EXISTS description TEXT;
+ALTER TABLE products ADD COLUMN IF NOT EXISTS coverage TEXT;
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS customer_name TEXT;
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS customer_email TEXT;
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS customer_phone TEXT;
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS customer_cpf TEXT;
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS customer_address TEXT;
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS total_amount NUMERIC;
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS payment_id TEXT;
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS payment_method TEXT;
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS status TEXT DEFAULT 'pending';
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ DEFAULT now();
+ALTER TABLE order_items ADD COLUMN IF NOT EXISTS order_id UUID REFERENCES orders(id) ON DELETE CASCADE;
+ALTER TABLE order_items ADD COLUMN IF NOT EXISTS product_id UUID REFERENCES products(id);
+ALTER TABLE order_items ADD COLUMN IF NOT EXISTS product_name TEXT;
+ALTER TABLE order_items ADD COLUMN IF NOT EXISTS quantity INTEGER;
+ALTER TABLE order_items ADD COLUMN IF NOT EXISTS price NUMERIC;
+ALTER TABLE kit_items ADD COLUMN IF NOT EXISTS kit_id UUID REFERENCES products(id) ON DELETE CASCADE;
+ALTER TABLE kit_items ADD COLUMN IF NOT EXISTS product_id UUID REFERENCES products(id);
+ALTER TABLE kit_items ADD COLUMN IF NOT EXISTS quantity INTEGER DEFAULT 1;
+
+CREATE INDEX IF NOT EXISTS idx_products_category_id ON products(category_id);
+CREATE INDEX IF NOT EXISTS idx_products_brand_id ON products(brand_id);
+CREATE INDEX IF NOT EXISTS idx_orders_status ON orders(status);
+CREATE INDEX IF NOT EXISTS idx_order_items_order_id ON order_items(order_id);
+CREATE INDEX IF NOT EXISTS idx_kit_items_kit_id ON kit_items(kit_id);
 
 
 -- -----------------------------------------------------------------------------
@@ -115,7 +150,8 @@ BEGIN
     br_auto := (SELECT id FROM brands WHERE name = 'Autoluks');
     br_colo := (SELECT id FROM brands WHERE name = 'Colorgin');
 
-    -- Inserindo Produtos Base
+    -- Insere o catálogo de exemplo uma única vez.
+    IF NOT EXISTS (SELECT 1 FROM products WHERE name = 'Suvinil Rende Muito 18L') THEN
     INSERT INTO products (name, price, image_url, category_id, brand_id, stars, coverage, description) VALUES
     ('Suvinil Rende Muito 18L', 259.90, 'https://images.tcdn.com.br/img/img_prod/650361/tinta_acrilica_fosco_completo_coral_branco_18l_4025_1_20200422151912.jpg', cat_tintas, br_suvinil, 5, 400, 'Tinta acrílica fosco de alta cobertura e durabilidade.'),
     ('Suvinil Cor & Proteção 18L', 289.90, 'https://m.media-amazon.com/images/I/61kJlFbPaoL._AC_SX679_.jpg', cat_tintas, br_suvinil, 5, 380, 'Tinta premium com proteção UV e resistência à umidade.'),
@@ -166,14 +202,16 @@ BEGIN
     ('Tinta Acrílica Terracota 3,6L', 135.00, 'https://example.com/terracota.jpg', cat_tintas, br_suvinil, 5, 360, 'Cor terrosa moderna para salas.'),
     ('Verniz PU Fosco 900ml', 62.00, 'https://example.com/verniz-fosco.jpg', cat_spray, br_auto, 5, NULL, 'Acabamento elegante e sem brilho.'),
     ('Tinta Acrílica Grafite 18L', 310.00, 'https://example.com/grafite.jpg', cat_tintas, br_suvinil, 5, 390, 'O cinza mais pedido para fachadas modernas.');
-);
+    END IF;
 
     -- Inserindo Kits (como produtos especiais)
+    IF NOT EXISTS (SELECT 1 FROM products WHERE name = 'Kit Quarto Completo') THEN
     INSERT INTO products (name, price, image_url, category_id, brand_id, description)
     VALUES
     ('Kit Quarto Completo', 349.90, 'https://example.com/kit-quarto.jpg', cat_kits, NULL, 'Tudo para pintar um quarto de até 15m²'),
     ('Kit Banheiro Anti-mofo', 229.90, 'https://example.com/kit-banheiro.jpg', cat_kits, NULL, 'Proteção contra umidade e mofo'),
     ('Kit Fachada Premium', 479.90, 'https://example.com/kit-fachada.jpg', cat_kits, NULL, 'Proteção máxima para área externa');
+    END IF;
 END $$;
 
 
@@ -185,22 +223,72 @@ END $$;
 INSERT INTO kit_items (kit_id, product_id, quantity)
 SELECT
   (SELECT id FROM products WHERE name = 'Kit Quarto Completo'),
-  id, 1
-FROM products
-WHERE name IN ('Suvinil Rende Muito 18L', 'Rolo de Pintura 23cm Atlas', 'Bandeja para Rolo 23cm', 'Fita Crepe Profissional 48mm', 'Lona Plástica 4x4m');
+  product.id, 1
+FROM products AS product
+WHERE product.name IN ('Suvinil Rende Muito 18L', 'Rolo de Pintura 23cm Atlas', 'Bandeja para Rolo 23cm', 'Fita Crepe Profissional 48mm', 'Lona Plástica 4x4m')
+  AND NOT EXISTS (
+    SELECT 1 FROM kit_items existing
+    WHERE existing.kit_id = (SELECT id FROM products WHERE name = 'Kit Quarto Completo')
+      AND existing.product_id = product.id
+  );
 
 -- Vinculando itens ao Kit Banheiro
 INSERT INTO kit_items (kit_id, product_id, quantity)
 SELECT
   (SELECT id FROM products WHERE name = 'Kit Banheiro Anti-mofo'),
-  id, 1
-FROM products
-WHERE name IN ('Tinta Acrílica Fosco Branco 3,6L', 'Pincel Tramontina 2 polegadas', 'Fita Crepe Profissional 48mm', 'Selador Acrílico Branco 18L');
+  product.id, 1
+FROM products AS product
+WHERE product.name IN ('Tinta Acrílica Fosco Branco 3,6L', 'Pincel Tramontina 2 polegadas', 'Fita Crepe Profissional 48mm', 'Selador Acrílico Branco 18L')
+  AND NOT EXISTS (
+    SELECT 1 FROM kit_items existing
+    WHERE existing.kit_id = (SELECT id FROM products WHERE name = 'Kit Banheiro Anti-mofo')
+      AND existing.product_id = product.id
+  );
 
 -- Vinculando itens ao Kit Fachada
 INSERT INTO kit_items (kit_id, product_id, quantity)
 SELECT
   (SELECT id FROM products WHERE name = 'Kit Fachada Premium'),
-  id, 1
-FROM products
-WHERE name IN ('Massa Acrílica Externa 25kg', 'Rolo de Lã Sintética 23cm', 'Bandeja para Rolo 23cm', 'Primer PU Cinza 3,6L', 'Lona Plástica 4x4m');
+  product.id, 1
+FROM products AS product
+WHERE product.name IN ('Massa Acrílica Externa 25kg', 'Rolo de Lã Sintética 23cm', 'Bandeja para Rolo 23cm', 'Primer PU Cinza 3,6L', 'Lona Plástica 4x4m')
+  AND NOT EXISTS (
+    SELECT 1 FROM kit_items existing
+    WHERE existing.kit_id = (SELECT id FROM products WHERE name = 'Kit Fachada Premium')
+      AND existing.product_id = product.id
+  );
+
+-- -----------------------------------------------------------------------------
+-- SEÇÃO 4: SEGURANÇA (RLS)
+-- Catálogo: leitura pública. Pedidos: somente o backend com service role.
+-- -----------------------------------------------------------------------------
+
+ALTER TABLE categories ENABLE ROW LEVEL SECURITY;
+ALTER TABLE brands ENABLE ROW LEVEL SECURITY;
+ALTER TABLE products ENABLE ROW LEVEL SECURITY;
+ALTER TABLE orders ENABLE ROW LEVEL SECURITY;
+ALTER TABLE order_items ENABLE ROW LEVEL SECURITY;
+ALTER TABLE kit_items ENABLE ROW LEVEL SECURITY;
+
+GRANT SELECT ON categories, brands, products, kit_items TO anon, authenticated;
+GRANT ALL ON categories, brands, products, orders, order_items, kit_items TO service_role;
+REVOKE INSERT, UPDATE, DELETE ON categories, brands, products, kit_items FROM anon, authenticated;
+REVOKE ALL ON orders, order_items FROM anon, authenticated;
+
+DROP POLICY IF EXISTS "Public can read categories" ON categories;
+CREATE POLICY "Public can read categories" ON categories
+  FOR SELECT TO anon, authenticated USING (true);
+
+DROP POLICY IF EXISTS "Public can read brands" ON brands;
+CREATE POLICY "Public can read brands" ON brands
+  FOR SELECT TO anon, authenticated USING (true);
+
+DROP POLICY IF EXISTS "Public can read products" ON products;
+CREATE POLICY "Public can read products" ON products
+  FOR SELECT TO anon, authenticated USING (true);
+
+DROP POLICY IF EXISTS "Public can read kit items" ON kit_items;
+CREATE POLICY "Public can read kit items" ON kit_items
+  FOR SELECT TO anon, authenticated USING (true);
+
+COMMIT;
