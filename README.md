@@ -14,17 +14,8 @@ npm run dev
 
 Abra http://localhost:3000
 
-### Configuração do Mercado Pago
 
-1. Crie uma conta no Mercado Pago e gere um token de acesso do Checkout Pro.
-2. Copie o conteúdo de `.env.example` para `.env.local` e preencha a variável:
 
-```env
-MP_ACCESS_TOKEN=SEU_ACCESS_TOKEN_DO_MERCADO_PAGO
-NEXT_PUBLIC_APP_URL=http://localhost:3000
-```
-
-3. O checkout usa a rota `/api/checkout/create-payment` para criar a preferência e redirecionar o usuário para a página de pagamento do Mercado Pago.
 
 ### Configuração do Supabase
 
