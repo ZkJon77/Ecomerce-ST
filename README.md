@@ -50,7 +50,7 @@ Para confirmar pagamentos automaticamente, configure a URL pública do projeto e
 https://SEU_DOMINIO.com/api/webhooks/payment
 ```
 
-No Mercado Pago, vincule essa URL em "Webhooks" para receber eventos de pagamento. A rota atualiza o status do pedido quando o Mercado Pago confirma o pagamento.
+No Mercado Pago, vincule essa URL em "Webhooks" para receber eventos de pagamento e selecione o evento de pagamentos. Copie a Assinatura secreta gerada nessa configuração para `MP_WEBHOOK_SECRET` na Vercel. A rota valida `x-signature` e `x-request-id`, consulta o pagamento diretamente no Mercado Pago e confere valor/moeda antes de atualizar o pedido.
 
 O checkout valida os preços no servidor e só cria o pagamento depois que o pedido pode ser salvo no Supabase. Em desenvolvimento local, `localhost` não é acessível pelo Mercado Pago. A preferência é criada sem URLs de retorno/webhook; para testar o retorno automático, use um túnel HTTPS público e configure `NEXT_PUBLIC_APP_URL` com essa URL. Em produção, configure essa variável com o domínio HTTPS do site. Configure também `MP_WEBHOOK_SECRET` com a assinatura secreta da configuração de Webhooks do Mercado Pago.
 
