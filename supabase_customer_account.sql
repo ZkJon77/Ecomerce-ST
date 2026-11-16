@@ -14,6 +14,11 @@ ALTER TABLE public.orders
 CREATE INDEX IF NOT EXISTS idx_orders_user_created_at
   ON public.orders(user_id, created_at DESC);
 
+INSERT INTO public.profiles (id, full_name)
+SELECT id, NULLIF(BTRIM(raw_user_meta_data ->> 'full_name'), '')
+FROM auth.users
+ON CONFLICT (id) DO NOTHING;
+
 CREATE TABLE IF NOT EXISTS public.wishlist_items (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
