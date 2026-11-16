@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { MercadoPagoConfig, Preference } from 'mercadopago';
-import { hasSupabaseAdminConfig, supabaseAdmin } from '../../../../lib/supabase';
+import { hasSupabaseAdminConfig, supabaseAdmin } from '../../../../lib/supabase-admin';
 import { sendOrderNotification } from '../../../../lib/whatsapp';
 import { KITS, PRODUCTS } from '../../../../lib/constants';
 
@@ -62,7 +62,7 @@ export async function POST(req) {
 
     if (!hasSupabaseAdminConfig || !supabaseAdmin) {
       return NextResponse.json({
-        error: 'Supabase não está configurado para salvar pedidos. Configure SUPABASE_SERVICE_ROLE_KEY no servidor antes de ativar o checkout.'
+        error: 'Supabase não está configurado para salvar pedidos. Configure SUPABASE_SECRET_KEY (ou SUPABASE_SERVICE_ROLE_KEY) no servidor antes de ativar o checkout.'
       }, { status: 503 });
     }
 
