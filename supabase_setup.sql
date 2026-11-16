@@ -69,6 +69,13 @@ CREATE TABLE IF NOT EXISTS kit_items (
   quantity INTEGER DEFAULT 1
 );
 
+-- Perfil público vinculado a cada conta criada no Supabase Auth.
+CREATE TABLE IF NOT EXISTS public.profiles (
+  id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
+  full_name TEXT,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
 -- Compatibilidade para projetos que já tenham criado as tabelas.
 ALTER TABLE products ADD COLUMN IF NOT EXISTS image_url TEXT;
 ALTER TABLE products ADD COLUMN IF NOT EXISTS category_id UUID REFERENCES categories(id);
@@ -94,6 +101,8 @@ ALTER TABLE order_items ADD COLUMN IF NOT EXISTS price NUMERIC;
 ALTER TABLE kit_items ADD COLUMN IF NOT EXISTS kit_id UUID REFERENCES products(id) ON DELETE CASCADE;
 ALTER TABLE kit_items ADD COLUMN IF NOT EXISTS product_id UUID REFERENCES products(id);
 ALTER TABLE kit_items ADD COLUMN IF NOT EXISTS quantity INTEGER DEFAULT 1;
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS full_name TEXT;
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ NOT NULL DEFAULT now();
 
 CREATE INDEX IF NOT EXISTS idx_products_category_id ON products(category_id);
 CREATE INDEX IF NOT EXISTS idx_products_brand_id ON products(brand_id);
@@ -260,7 +269,8 @@ WHERE product.name IN ('Massa Acrílica Externa 25kg', 'Rolo de Lã Sintética 2
 
 -- -----------------------------------------------------------------------------
 -- SEÇÃO 4: SEGURANÇA (RLS)
--- Catálogo: leitura pública. Pedidos: somente o backend com service role.
+-- Catálogo: leitura pública. Perfis: cada usuário acessa somente o próprio.
+-- Pedidos: somente o backend com service role.
 -- -----------------------------------------------------------------------------
 
 ALTER TABLE categories ENABLE ROW LEVEL SECURITY;
@@ -269,11 +279,59 @@ ALTER TABLE products ENABLE ROW LEVEL SECURITY;
 ALTER TABLE orders ENABLE ROW LEVEL SECURITY;
 ALTER TABLE order_items ENABLE ROW LEVEL SECURITY;
 ALTER TABLE kit_items ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
 
 GRANT SELECT ON categories, brands, products, kit_items TO anon, authenticated;
-GRANT ALL ON categories, brands, products, orders, order_items, kit_items TO service_role;
+GRANT SELECT, UPDATE ON public.profiles TO authenticated;
+GRANT ALL ON categories, brands, products, orders, order_items, kit_items, public.profiles TO service_role;
 REVOKE INSERT, UPDATE, DELETE ON categories, brands, products, kit_items FROM anon, authenticated;
 REVOKE ALL ON orders, order_items FROM anon, authenticated;
+REVOKE ALL ON public.profiles FROM anon;
+
+-- Cria um perfil quando o cadastro por e-mail inserir um usuário no Supabase Auth.
+CREATE OR REPLACE FUNCTION public.handle_new_user()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = ''
+AS $$
+BEGIN
+  INSERT INTO public.profiles (id, full_name)
+  VALUES (
+    NEW.id,
+    NULLIF(BTRIM(NEW.raw_user_meta_data ->> 'full_name'), '')
+  )
+  ON CONFLICT (id) DO NOTHING;
+
+  RETURN NEW;
+END;
+$$;
+
+REVOKE ALL ON FUNCTION public.handle_new_user() FROM PUBLIC, anon, authenticated;
+
+DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
+CREATE TRIGGER on_auth_user_created
+  AFTER INSERT ON auth.users
+  FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
+
+-- Cria perfis para contas que já existiam antes da instalação deste script.
+INSERT INTO public.profiles (id, full_name)
+SELECT
+  id,
+  NULLIF(BTRIM(raw_user_meta_data ->> 'full_name'), '')
+FROM auth.users
+ON CONFLICT (id) DO NOTHING;
+
+DROP POLICY IF EXISTS "Users can read own profile" ON public.profiles;
+CREATE POLICY "Users can read own profile" ON public.profiles
+  FOR SELECT TO authenticated
+  USING (auth.uid() = id);
+
+DROP POLICY IF EXISTS "Users can update own profile" ON public.profiles;
+CREATE POLICY "Users can update own profile" ON public.profiles
+  FOR UPDATE TO authenticated
+  USING (auth.uid() = id)
+  WITH CHECK (auth.uid() = id);
 
 DROP POLICY IF EXISTS "Public can read categories" ON categories;
 CREATE POLICY "Public can read categories" ON categories
