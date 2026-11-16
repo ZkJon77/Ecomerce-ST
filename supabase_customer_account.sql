@@ -19,6 +19,15 @@ SELECT id, NULLIF(BTRIM(raw_user_meta_data ->> 'full_name'), '')
 FROM auth.users
 ON CONFLICT (id) DO NOTHING;
 
+-- Vincula pedidos antigos de visitante quando o e-mail coincide exatamente
+-- com o e-mail de uma conta existente no Auth.
+UPDATE public.orders AS o
+SET user_id = u.id
+FROM auth.users AS u
+WHERE o.user_id IS NULL
+  AND o.customer_email IS NOT NULL
+  AND lower(trim(o.customer_email)) = lower(trim(u.email));
+
 CREATE TABLE IF NOT EXISTS public.wishlist_items (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
