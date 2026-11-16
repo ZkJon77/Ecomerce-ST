@@ -25,6 +25,16 @@ export async function POST(req) {
   try {
     const body = await req.json();
     const { cart, userData, paymentMethod = 'pix' } = body;
+    let authenticatedUserId = null;
+    const authorization = req.headers.get('authorization');
+    if (authorization?.startsWith('Bearer ')) {
+      const accessToken = authorization.slice(7).trim();
+      const { data: authData, error: authError } = await supabaseAdmin.auth.getUser(accessToken);
+      if (authError || !authData?.user) {
+        return NextResponse.json({ error: 'Sua sessão expirou. Entre novamente para concluir a compra.' }, { status: 401 });
+      }
+      authenticatedUserId = authData.user.id;
+    }
 
     if (!Array.isArray(cart) || !cart.length) {
       return NextResponse.json({ error: 'Carrinho vazio' }, { status: 400 });
@@ -74,6 +84,7 @@ export async function POST(req) {
       const { data: order, error: orderError } = await supabaseAdmin
         .from('orders')
         .insert({
+          user_id: authenticatedUserId,
           customer_name: userData.name,
           customer_email: userData.email,
           customer_phone: userData.phone,
