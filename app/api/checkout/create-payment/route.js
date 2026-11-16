@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { MercadoPagoConfig, Preference } from 'mercadopago';
-import { hasSupabaseAdminConfig, supabaseAdmin } from '../../../../lib/supabase';
+import { hasSupabaseAdminConfig, supabaseAdmin } from '../../../../lib/supabase-admin';
 import { sendOrderNotification } from '../../../../lib/whatsapp';
 import { KITS, PRODUCTS } from '../../../../lib/constants';
 
@@ -21,9 +21,23 @@ function getPublicBaseUrl() {
 }
 
 export async function POST(req) {
+  let orderId = null;
   try {
     const body = await req.json();
     const { cart, userData, paymentMethod = 'pix' } = body;
+    if (!hasSupabaseAdminConfig || !supabaseAdmin) {
+      return NextResponse.json({ error: 'Supabase não está configurado para salvar pedidos. Confira a chave administrativa do projeto no ambiente do servidor.' }, { status: 503 });
+    }
+    let authenticatedUserId = null;
+    const authorization = req.headers.get('authorization');
+    if (authorization?.startsWith('Bearer ')) {
+      const accessToken = authorization.slice(7).trim();
+      const { data: authData, error: authError } = await supabaseAdmin.auth.getUser(accessToken);
+      if (authError || !authData?.user) {
+        return NextResponse.json({ error: 'Sua sessão expirou. Entre novamente para concluir a compra.' }, { status: 401 });
+      }
+      authenticatedUserId = authData.user.id;
+    }
 
     if (!Array.isArray(cart) || !cart.length) {
       return NextResponse.json({ error: 'Carrinho vazio' }, { status: 400 });
@@ -62,18 +76,18 @@ export async function POST(req) {
 
     if (!hasSupabaseAdminConfig || !supabaseAdmin) {
       return NextResponse.json({
-        error: 'Supabase não está configurado para salvar pedidos. Configure SUPABASE_SERVICE_ROLE_KEY no servidor antes de ativar o checkout.'
+        error: 'Supabase não está configurado para salvar pedidos. Configure SUPABASE_SECRET_KEY (ou SUPABASE_SERVICE_ROLE_KEY) no servidor antes de ativar o checkout.'
       }, { status: 503 });
     }
 
     const amount = verifiedCart.reduce((sum, item) => sum + item.price * item.qty, 0);
     const baseUrl = getPublicBaseUrl();
 
-    let orderId;
     try {
       const { data: order, error: orderError } = await supabaseAdmin
         .from('orders')
         .insert({
+          user_id: authenticatedUserId,
           customer_name: userData.name,
           customer_email: userData.email,
           customer_phone: userData.phone,
@@ -161,6 +175,13 @@ export async function POST(req) {
       orderId,
     });
   } catch (error) {
+    if (orderId && supabaseAdmin) {
+      const { error: statusError } = await supabaseAdmin
+        .from('orders')
+        .update({ status: 'payment_error' })
+        .eq('id', orderId);
+      if (statusError) console.error('Could not mark failed checkout order:', statusError);
+    }
     console.error('Checkout Error:', error);
     return NextResponse.json(
       { error: error.message || 'Erro interno no servidor' },

@@ -108,7 +108,7 @@ export const Header = ({ cartCount, onCartOpen, onGoHome, onGoCor, currentPage, 
             style={{ display: "flex", alignItems: "center", gap: 6, background: "rgba(255,255,255,0.15)", border: "1px solid rgba(255,255,255,0.3)", borderRadius: 20, padding: "7px 16px", color: "white", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
             <Paintbrush size={14} /> Consultar Cor
           </button>
-          <User className="site-header-account" size={22} color="white" style={{ cursor: "pointer" }} onClick={() => router.push('/login')} />
+          <User className="site-header-account" size={22} color="white" style={{ cursor: "pointer" }} onClick={() => router.push('/minha-conta')} />
           <div style={{ position: "relative", cursor: "pointer" }} onClick={onCartOpen}>
             <ShoppingCart size={22} color="white" />
             {cartCount > 0 && (
