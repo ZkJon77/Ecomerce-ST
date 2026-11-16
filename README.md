@@ -38,7 +38,7 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=SUA_CHAVE_PUBLICA
    - **Redirect URLs** com `http://localhost:3000/login` e a URL de produção terminada em `/login` (por exemplo, `https://seu-dominio.com/login`).
 3. Em **Authentication > Providers**, deixe **Email** habilitado. O cadastro envia um link de confirmação para `/login`; o login só funciona depois da confirmação se a confirmação de e-mail estiver habilitada.
 4. Reinicie o servidor local depois de salvar o `.env.local`. No Vercel, adicione `NEXT_PUBLIC_SUPABASE_URL` e `NEXT_PUBLIC_SUPABASE_ANON_KEY` nas variáveis de ambiente de **Production** e faça um novo deploy.
-5. Para configurar o banco, os perfis de usuário e os pedidos da loja, abra **SQL Editor > New query** e execute o conteúdo de [supabase_setup.sql](./supabase_setup.sql). O script cria automaticamente um perfil com o nome informado no cadastro, restringe cada usuário ao próprio perfil e também preenche perfis para contas que já existiam. Adicione uma chave secreta Supabase (`sb_secret_` ou `service_role`) como `SUPABASE_SERVICE_ROLE_KEY` somente no servidor/Vercel; ela é obrigatória para gravar pedidos.
+5. Para configurar o banco, os perfis de usuário e os pedidos da loja, abra **SQL Editor > New query** e execute o conteúdo de [supabase_setup.sql](./supabase_setup.sql). O script cria automaticamente um perfil com o nome informado no cadastro, restringe cada usuário ao próprio perfil e também preenche perfis para contas que já existiam. Na Vercel, configure `SUPABASE_URL` (ou `NEXT_PUBLIC_SUPABASE_URL`) e uma chave secreta (`SUPABASE_SECRET_KEY`, preferida, ou `SUPABASE_SERVICE_ROLE_KEY`, legada) somente no servidor. Nunca use a chave secreta com prefixo `NEXT_PUBLIC_`.
 
 Nunca use a chave `service_role` no navegador nem com prefixo `NEXT_PUBLIC_`. A autenticação básica usa Supabase Auth e não exige executar o SQL de catálogo/pedidos.
 
@@ -52,7 +52,7 @@ https://SEU_DOMINIO.com/api/webhooks/payment
 
 No Mercado Pago, vincule essa URL em "Webhooks" para receber eventos de pagamento. A rota atualiza o status do pedido quando o Mercado Pago confirma o pagamento.
 
-O checkout valida os preços no servidor e só cria o pagamento depois que o pedido pode ser salvo no Supabase. Em desenvolvimento local, `localhost` não é acessível pelo Mercado Pago. A preferência é criada sem URLs de retorno/webhook; para testar o retorno automático, use um túnel HTTPS público e configure `NEXT_PUBLIC_APP_URL` com essa URL. Em produção, configure essa variável com o domínio HTTPS do site.
+O checkout valida os preços no servidor e só cria o pagamento depois que o pedido pode ser salvo no Supabase. Em desenvolvimento local, `localhost` não é acessível pelo Mercado Pago. A preferência é criada sem URLs de retorno/webhook; para testar o retorno automático, use um túnel HTTPS público e configure `NEXT_PUBLIC_APP_URL` com essa URL. Em produção, configure essa variável com o domínio HTTPS do site. Configure também `MP_WEBHOOK_SECRET` com a assinatura secreta da configuração de Webhooks do Mercado Pago.
 
 ## Deploy no Vercel
 
