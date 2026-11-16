@@ -21,6 +21,7 @@ function getPublicBaseUrl() {
 }
 
 export async function POST(req) {
+  let orderId = null;
   try {
     const body = await req.json();
     const { cart, userData, paymentMethod = 'pix' } = body;
@@ -69,7 +70,6 @@ export async function POST(req) {
     const amount = verifiedCart.reduce((sum, item) => sum + item.price * item.qty, 0);
     const baseUrl = getPublicBaseUrl();
 
-    let orderId;
     try {
       const { data: order, error: orderError } = await supabaseAdmin
         .from('orders')
@@ -161,6 +161,13 @@ export async function POST(req) {
       orderId,
     });
   } catch (error) {
+    if (orderId && supabaseAdmin) {
+      const { error: statusError } = await supabaseAdmin
+        .from('orders')
+        .update({ status: 'payment_error' })
+        .eq('id', orderId);
+      if (statusError) console.error('Could not mark failed checkout order:', statusError);
+    }
     console.error('Checkout Error:', error);
     return NextResponse.json(
       { error: error.message || 'Erro interno no servidor' },
