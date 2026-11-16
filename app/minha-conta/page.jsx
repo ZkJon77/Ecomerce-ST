@@ -58,13 +58,12 @@ export default function AccountPage() {
     if (!user) return;
     setSaving(true);
     setMessage("");
-    const { error } = await supabase.from("profiles").upsert({
-      id: user.id,
+    const { error } = await supabase.from("profiles").update({
       full_name: profile.full_name.trim(),
       phone: profile.phone.trim() || null,
       address: profile.address.trim() || null,
       updated_at: new Date().toISOString(),
-    }, { onConflict: "id" });
+    }).eq("id", user.id);
     setSaving(false);
     setMessage(error ? "Não foi possível salvar. Confira se executou a atualização SQL no Supabase." : "Dados atualizados com sucesso.");
   }
