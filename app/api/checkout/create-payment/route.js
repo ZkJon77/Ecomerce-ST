@@ -25,6 +25,9 @@ export async function POST(req) {
   try {
     const body = await req.json();
     const { cart, userData, paymentMethod = 'pix' } = body;
+    if (!hasSupabaseAdminConfig || !supabaseAdmin) {
+      return NextResponse.json({ error: 'Supabase não está configurado para salvar pedidos. Confira a chave administrativa do projeto no ambiente do servidor.' }, { status: 503 });
+    }
     let authenticatedUserId = null;
     const authorization = req.headers.get('authorization');
     if (authorization?.startsWith('Bearer ')) {
