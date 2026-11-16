@@ -1,6 +1,7 @@
 "use client"
 import React, { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
+import { supabase } from "@/lib/supabase"
 import {
   ChevronLeft,
   CreditCard,
@@ -71,11 +72,26 @@ export default function CheckoutPage() {
 
   useEffect(() => {
     const stored = localStorage.getItem("silver-cart") || localStorage.getItem("cart")
-    if (stored) {
-      setCart(JSON.parse(stored))
-    } else {
-      router.push("/")
+    if (stored) setCart(JSON.parse(stored))
+    else router.push("/")
+
+    let active = true
+    async function loadCustomerData() {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!active || !user) return
+      const { data: profile } = await supabase.from("profiles")
+        .select("full_name, phone, address").eq("id", user.id).maybeSingle()
+      if (!active) return
+      setUserData(current => ({
+        ...current,
+        name: profile?.full_name || user.user_metadata?.full_name || current.name,
+        email: user.email || current.email,
+        phone: profile?.phone || current.phone,
+        address: profile?.address || current.address,
+      }))
     }
+    loadCustomerData()
+    return () => { active = false }
   }, [router])
 
   const subtotal = cart.reduce((sum, item) => sum + item.price * item.qty, 0)
@@ -105,9 +121,12 @@ export default function CheckoutPage() {
     setLoading(true)
 
     try {
+      const { data: { session } } = await supabase.auth.getSession()
+      const headers = { "Content-Type": "application/json" }
+      if (session?.access_token) headers.Authorization = `Bearer ${session.access_token}`
       const response = await fetch("/api/checkout/create-payment", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers,
         body: JSON.stringify({
           cart,
           userData,
