@@ -7,7 +7,6 @@ nextEnv.loadEnvConfig(process.cwd())
 const requiredVariables = [
   "NEXT_PUBLIC_SUPABASE_URL",
   "NEXT_PUBLIC_SUPABASE_ANON_KEY",
-  "SUPABASE_SERVICE_ROLE_KEY",
   "ASAAS_API_KEY",
   "ASAAS_WEBHOOK_TOKEN",
 ]
@@ -20,6 +19,13 @@ for (const name of requiredVariables) {
   if (!configured) missingVariables = true
 }
 
+const adminKeyConfigured = Boolean(
+  process.env.SUPABASE_SECRET_KEY?.trim() ||
+  process.env.SUPABASE_SERVICE_ROLE_KEY?.trim()
+)
+console.log(`${adminKeyConfigured ? "OK" : "FALTA"} SUPABASE_SECRET_KEY ou SUPABASE_SERVICE_ROLE_KEY`)
+if (!adminKeyConfigured) missingVariables = true
+
 const appUrl = process.env.NEXT_PUBLIC_APP_URL?.trim()
 if (!appUrl) {
   console.log("FALTA NEXT_PUBLIC_APP_URL")
@@ -27,10 +33,8 @@ if (!appUrl) {
 } else {
   try {
     const url = new URL(appUrl)
-    const localDevelopment = ["localhost", "127.0.0.1"].includes(url.hostname)
-    const secureProductionUrl = url.protocol === "https:" && !localDevelopment
-    const validLocalUrl = url.protocol === "http:" && localDevelopment
-    if (!secureProductionUrl && !validLocalUrl) {
+    const local = ["localhost", "127.0.0.1"].includes(url.hostname)
+    if (!(url.protocol === "https:" && !local) && !(url.protocol === "http:" && local)) {
       console.log("FALTA NEXT_PUBLIC_APP_URL precisa ser HTTPS em produção ou localhost no desenvolvimento.")
       missingVariables = true
     } else {
@@ -43,18 +47,17 @@ if (!appUrl) {
 }
 
 for (const file of ["supabase_setup.sql", "supabase_asaas_migration.sql"]) {
-  const filePath = resolve(process.cwd(), file)
-  if (!existsSync(filePath)) {
+  if (!existsSync(resolve(process.cwd(), file))) {
     console.error(`FALTA ${file}`)
     missingVariables = true
   } else {
-    console.log(`OK ${file} encontrado (execute no SQL Editor do Supabase quando indicado).`)
+    console.log(`OK ${file} encontrado.`)
   }
 }
 
 if (missingVariables) {
-  console.error("\\nConfiguração incompleta. Preencha as variáveis em .env.local e execute npm run setup:check novamente.")
+  console.error("\\nConfiguração incompleta. Preencha .env.local e execute npm run setup:check novamente.")
   process.exitCode = 1
 } else {
-  console.log("\\nVariáveis configuradas. Confirme no Supabase que os scripts SQL já foram executados.")
+  console.log("\\nVariáveis encontradas. Execute as migrações SQL e valide as credenciais no Sandbox.")
 }
