@@ -6,17 +6,18 @@ import { KITS, PRODUCTS } from '../../../../lib/constants';
 function getPublicBaseUrl() {
   const configuredUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_SITE_URL;
   const vercelUrl = process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null;
-  const value = configuredUrl || vercelUrl;
+  const candidates = [configuredUrl, vercelUrl, 'https://ecomerce-st.vercel.app'];
 
-  if (!value) return null;
-
-  try {
-    const url = new URL(value);
-    if (url.protocol !== 'https:' || ['localhost', '127.0.0.1'].includes(url.hostname)) return null;
-    return url.origin;
-  } catch {
-    return null;
+  for (const value of candidates) {
+    if (!value) continue;
+    try {
+      const url = new URL(value);
+      if (url.protocol === 'https:' && !['localhost', '127.0.0.1'].includes(url.hostname)) return url.origin;
+    } catch {
+      // Tenta a próxima URL conhecida.
+    }
   }
+  return 'https://ecomerce-st.vercel.app';
 }
 
 export async function POST(req) {
@@ -188,6 +189,15 @@ export async function POST(req) {
     const client = new MercadoPagoConfig({ accessToken });
     const preference = new Preference(client);
 
+    const excludedPaymentTypesByMethod = {
+      // Pix é classificado como bank_transfer pelo Mercado Pago.
+      pix: ['ticket', 'credit_card', 'debit_card'],
+      // Boleto é classificado como ticket.
+      boleto: ['bank_transfer', 'credit_card', 'debit_card'],
+      // Cartão mantém crédito/débito e remove Pix e boleto.
+      card: ['bank_transfer', 'ticket'],
+    };
+
     const preferenceBody = {
       items: verifiedCart.map((item) => ({
         id: item.id,
@@ -199,6 +209,11 @@ export async function POST(req) {
       payer: {
         name: userData.name,
         email: userData.email,
+        ...(userData.cpf ? { identification: { type: 'CPF', number: String(userData.cpf).replace(/\\D/g, '') } } : {}),
+      },
+      payment_methods: {
+        excluded_payment_types: (excludedPaymentTypesByMethod[paymentMethod] || []).map((id) => ({ id })),
+        installments: paymentMethod === 'card' ? 12 : 1,
       },
       metadata: {
         orderId: orderId || 'guest-order',
