@@ -278,6 +278,7 @@ export async function GET(request) {
     console.error("[automotive-colors] Public catalog lookup failed:", error.message);
     const cached = await readCachedColors(manufacturer, modelName, code, query, year).catch(() => null);
     if (cached) {
+      await recordColorSearches(cached.results, manufacturer, modelName);
       return NextResponse.json({
         ...cached,
         notice: "A fonte pública está indisponível; estes resultados vêm do cache do Supabase. " + cached.notice,
