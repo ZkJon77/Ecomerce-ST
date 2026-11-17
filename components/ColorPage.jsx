@@ -69,8 +69,8 @@ export default function ColorPage() {
   const [error, setError] = useState("")
 
   const canSearch = useMemo(() => mode === "code"
-    ? code.trim().length > 0
-    : Boolean(manufacturer || model || year || group || query.trim()), [mode, code, manufacturer, model, year, group, query])
+    ? Boolean(code.trim() && manufacturer.trim() && model.trim())
+    : Boolean(manufacturer.trim() && model.trim()), [mode, code, manufacturer, model])
 
   async function handleSearch(event) {
     event?.preventDefault()
@@ -136,7 +136,7 @@ export default function ColorPage() {
           </div>
           <h1 style={{ fontSize: "clamp(25px,4vw,36px)", lineHeight: 1.12, margin: "16px 0 10px", fontWeight: 850 }}>Encontre a identificação da cor do seu veículo</h1>
           <p style={{ color: "#e0e4ff", fontSize: 14, lineHeight: 1.65, margin: 0 }}>
-            Pesquise por código de pintura ou pelas informações do veículo. Consulte registros automotivos cadastrados e verificados.
+            Pesquise por montadora e modelo, ou filtre pelo código OEM. Os registros disponíveis dependem da cobertura do catálogo público.
           </p>
         </div>
         <div style={{ position: "absolute", right: -28, bottom: -62, opacity: .12 }}><CarFront size={240} /></div>
@@ -149,14 +149,7 @@ export default function ColorPage() {
         </div>
 
         <form onSubmit={handleSearch}>
-          {mode === "code" ? (
-            <div>
-              <label style={LABEL_STYLE}>Código da cor / código OEM</label>
-              <input value={code} onChange={e => setCode(e.target.value.toUpperCase())} placeholder="Ex.: informe o código encontrado na etiqueta do veículo" style={FIELD_STYLE} />
-              <p style={{ color: "#788198", fontSize: 11, margin: "7px 0 0" }}>O código pode variar conforme montadora, ano, região e sistema de pintura.</p>
-            </div>
-          ) : (
-            <>
+          <>
               <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(190px,1fr))", gap: 14 }}>
                 <div>
                   <label style={LABEL_STYLE}>Montadora</label>
@@ -166,6 +159,10 @@ export default function ColorPage() {
                   <label style={LABEL_STYLE}>Modelo</label>
                   <input value={model} onChange={e => setModel(e.target.value)} placeholder="Ex.: Corolla, Civic, Onix" style={FIELD_STYLE} />
                 </div>
+                {mode === "code" && <div>
+                  <label style={LABEL_STYLE}>Código da cor / código OEM</label>
+                  <input value={code} onChange={e => setCode(e.target.value.toUpperCase())} placeholder="Código da etiqueta do veículo" style={FIELD_STYLE} />
+                </div>}
                 <div>
                   <label style={LABEL_STYLE}>Ano do veículo</label>
                   <input type="number" min="1950" max="2035" value={year} onChange={e => setYear(e.target.value)} placeholder="Ex.: 2020" style={FIELD_STYLE} />
@@ -191,8 +188,7 @@ export default function ColorPage() {
                 <label style={LABEL_STYLE}>Descrição ou nome da cor (opcional)</label>
                 <input value={query} onChange={e => setQuery(e.target.value)} placeholder="Ex.: prata metálico, branco perolizado..." style={FIELD_STYLE} />
               </div>
-            </>
-          )}
+          </>
 
           <div style={{ display: "flex", flexWrap: "wrap", gap: 10, marginTop: 22 }}>
             <button type="submit" disabled={!canSearch || loading} style={{ border: 0, borderRadius: 9, background: canSearch ? "#25206f" : "#aeb2c4", color: "#fff", padding: "13px 22px", fontSize: 13, fontWeight: 800, cursor: canSearch ? "pointer" : "not-allowed", display: "inline-flex", alignItems: "center", gap: 8 }}>
@@ -209,7 +205,7 @@ export default function ColorPage() {
       <section style={{ marginTop: 18, borderRadius: 12, background: "#f1f4ff", border: "1px solid #dfe5ff", padding: 15, display: "flex", gap: 10, alignItems: "flex-start" }}>
         <Info size={18} color="#37318a" style={{ flexShrink: 0, marginTop: 1 }} />
         <p style={{ color: "#454d70", fontSize: 12, lineHeight: 1.6, margin: 0 }}>
-          A cor exibida na tela é apenas uma referência visual. Para repintura, confirme o código na etiqueta do veículo e valide a variante com a loja ou fabricante do sistema de tintas. A tela não substitui leitura espectrofotométrica nem teste de aplicação.
+          A cor exibida na tela é apenas uma referência visual. Para repintura, confirme o código na etiqueta do veículo e valide a variante com a loja ou fabricante do sistema de tintas. O catálogo não fornece fórmula de mistura e não substitui leitura espectrofotométrica nem teste de aplicação.
         </p>
       </section>
 
@@ -232,13 +228,13 @@ export default function ColorPage() {
       {searched && !loading && results.length === 0 && !error && (
         <div style={{ marginTop: 22, padding: 22, border: "1px dashed #cbd0df", borderRadius: 13, textAlign: "center", background: "#fff" }}>
           <AlertCircle size={25} color="#777f95" />
-          <h3 style={{ color: "#252b4b", margin: "9px 0 5px", fontSize: 16 }}>Nenhuma fórmula cadastrada para esses filtros</h3>
+          <h3 style={{ color: "#252b4b", margin: "9px 0 5px", fontSize: 16 }}>Nenhuma cor encontrada para esses filtros</h3>
           <p style={{ color: "#737c91", fontSize: 12, lineHeight: 1.6, margin: 0 }}>Confira os dados ou fale com a equipe Silver Tintas para validar a identificação da cor.</p>
         </div>
       )}
 
       <div style={{ marginTop: 20, display: "flex", alignItems: "center", justifyContent: "center", gap: 7, color: "#8a91a3", fontSize: 11 }}>
-        <CheckCircle2 size={13} /> Consulta automotiva · Base de fórmulas autorizadas
+        <CheckCircle2 size={13} /> Consulta automotiva · Catálogo público de cores automotivas
       </div>
     </main>
   )
