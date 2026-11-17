@@ -47,12 +47,14 @@ if (!appUrl) {
   }
 }
 
-const setupSql = resolve(process.cwd(), "supabase_setup.sql")
-if (!existsSync(setupSql)) {
-  console.error("FALTA supabase_setup.sql não foi encontrado.")
-  missingVariables = true
-} else {
-  console.log("OK supabase_setup.sql encontrado (execute-o manualmente no SQL Editor do Supabase).")
+for (const sqlFile of ["supabase_setup.sql", "supabase_checkout_mercadopago_fix.sql"]) {
+  const filePath = resolve(process.cwd(), sqlFile)
+  if (!existsSync(filePath)) {
+    console.error(`FALTA ${sqlFile} não foi encontrado.`)
+    missingVariables = true
+  } else {
+    console.log(`OK ${sqlFile} encontrado (confirme a execução no SQL Editor do Supabase).`)
+  }
 }
 
 if (missingVariables) {
