@@ -97,12 +97,15 @@ export default function ColorPage() {
         if (!active) return
         const nextModels = Array.isArray(payload.models) ? payload.models : []
         setModels(nextModels)
-        const selected = nextModels.find(item => item.model.toLowerCase() === model.toLowerCase())
-        setModelId(selected?.id || "")
       })
       .catch(() => { if (active) { setModels([]); setModelId("") } })
     return () => { active = false }
   }, [makeId])
+
+  useEffect(() => {
+    const selected = models.find(item => item.model.toLowerCase() === model.toLowerCase())
+    setModelId(selected?.id || "")
+  }, [models, model])
 
   useEffect(() => {
     let active = true
@@ -241,6 +244,9 @@ export default function ColorPage() {
                   <p style={{ color: "#788198", fontSize: 10, margin: "5px 0 0" }}>A API não confirma a cor por ano específico.</p>
                 </div>
               </div>
+              <p style={{ color: "#788198", fontSize: 11, margin: "10px 0 0" }}>
+                Catálogo importado da planilha: {makes.length || "—"} montadoras · 953 modelos · 568 referências de cor. Os códigos OEM só aparecem quando foram informados na planilha.
+              </p>
               <div style={{ marginTop: 14 }}>
                 <label style={LABEL_STYLE}>Descrição ou nome da cor (opcional)</label>
                 <input value={query} onChange={e => setQuery(e.target.value)} placeholder="Ex.: prata metálico, branco perolizado..." style={FIELD_STYLE} />
