@@ -42,17 +42,20 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=SUA_CHAVE_PUBLICA
 
 Nunca use a chave `service_role` no navegador nem com prefixo `NEXT_PUBLIC_`. A autenticação básica usa Supabase Auth e não exige executar o SQL de catálogo/pedidos.
 
-### Webhook do Mercado Pago
+### Integração de pagamentos Asaas
 
-Para confirmar pagamentos automaticamente, configure a URL pública do projeto em:
+O checkout utiliza o Asaas para Pix, cartão de crédito e boleto. O cartão é finalizado na página segura hospedada pelo Asaas; o Pix exibe QR Code/copia e cola e o boleto disponibiliza o PDF/linha de pagamento.
 
-```text
-https://SEU_DOMINIO.com/api/webhooks/payment
-```
+1. Comece pelo [Sandbox do Asaas](https://sandbox.asaas.com/) e gere uma API Key de teste.
+2. Na Vercel, configure `ASAAS_ENV=sandbox` e `ASAAS_API_KEY` com a chave do Sandbox. Deixe `ASAAS_API_URL` vazia para usar automaticamente a URL correspondente ao ambiente.
+3. Execute [supabase_asaas_migration.sql](./supabase_asaas_migration.sql) no SQL Editor do Supabase. A migração adiciona o identificador do provedor e do cliente Asaas sem apagar os pedidos antigos.
+4. Crie um Webhook no Asaas apontando para `https://SEU_DOMINIO.com/api/webhooks/payment`. Use a versão v3, ative-o e selecione os eventos `PAYMENT_CONFIRMED`, `PAYMENT_RECEIVED`, `PAYMENT_OVERDUE`, `PAYMENT_DELETED`, `PAYMENT_REFUNDED`, `PAYMENT_PARTIALLY_REFUNDED`, `PAYMENT_CHARGEBACK_REQUESTED`, `PAYMENT_CREDIT_CARD_CAPTURE_REFUSED` e `PAYMENT_REPROVED_BY_RISK_ANALYSIS`.
+5. Gere um token de autenticação próprio nas configurações do Webhook (não reutilize a API Key) e salve em `ASAAS_WEBHOOK_TOKEN`.
+6. Faça deploy e teste Pix, boleto e cartão no Sandbox. Só depois de homologar, altere `ASAAS_ENV=production`, substitua `ASAAS_API_KEY` pela chave de produção e atualize o Webhook de produção.
 
-No Mercado Pago, vincule essa URL em "Webhooks" para receber eventos de pagamento e selecione o evento de pagamentos. Copie a Assinatura secreta gerada nessa configuração para `MP_WEBHOOK_SECRET` na Vercel. A rota valida `x-signature` e `x-request-id`, consulta o pagamento diretamente no Mercado Pago e confere valor/moeda antes de atualizar o pedido.
+O endpoint valida o header `asaas-access-token`, consulta a cobrança diretamente na API do Asaas, confere o valor com o pedido e só então atualiza o status no Supabase. Reenvios do webhook não devem duplicar a notificação à loja.
 
-O checkout valida os preços no servidor e só cria o pagamento depois que o pedido pode ser salvo no Supabase. Em desenvolvimento local, `localhost` não é acessível pelo Mercado Pago. A preferência é criada sem URLs de retorno/webhook; para testar o retorno automático, use um túnel HTTPS público e configure `NEXT_PUBLIC_APP_URL` com essa URL. Em produção, configure essa variável com o domínio HTTPS do site. Configure também `MP_WEBHOOK_SECRET` com a assinatura secreta da configuração de Webhooks do Mercado Pago.
+**Variáveis novas:** `ASAAS_ENV`, `ASAAS_API_URL` (opcional), `ASAAS_API_KEY` e `ASAAS_WEBHOOK_TOKEN`. As variáveis `MP_ACCESS_TOKEN` e `MP_WEBHOOK_SECRET` não são mais usadas pelo checkout ativo.
 
 ## Deploy no Vercel
 
