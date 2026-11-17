@@ -143,7 +143,13 @@ export async function POST(req) {
       const { error: itemsError } = await supabaseAdmin.from('order_items').insert(orderItems);
       if (itemsError) throw itemsError;
     } catch (dbError) {
-      console.error('Failed to save checkout order:', {\n        code: dbError?.code,\n        message: dbError?.message || String(dbError),\n        details: dbError?.details,\n        hint: dbError?.hint,\n        orderId,\n      });
+      console.error('Failed to save checkout order:', {
+        code: dbError?.code,
+        message: dbError?.message || String(dbError),
+        details: dbError?.details,
+        hint: dbError?.hint,
+        orderId,
+      });
       throw new Error('Não foi possível registrar o pedido. Verifique a configuração do Supabase.');
     }
 
