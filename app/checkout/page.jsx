@@ -189,7 +189,7 @@ export default function CheckoutPage() {
               </div>
             </div>
 
-            {paymentResult.qr_code && (
+            {(paymentResult.qr_code || paymentResult.copyPaste) && (
               <div style={{ textAlign: "center", marginBottom: 24 }}>
                 <div style={{ fontSize: 14, fontWeight: "700", color: "#1a1464", marginBottom: 12 }}>Escaneie o QR Code para pagar:</div>
                 <img src={paymentResult.qr_code} alt="Pix QR Code" style={{ width: 200, height: 200, margin: "0 auto 16px", background: "white", padding: 8, border: "1px solid #ddd" }} />
