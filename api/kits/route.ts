@@ -18,7 +18,7 @@ export async function GET() {
       .from('products')
       .select(`
         id, name, price, image_url, description,
-        kit_items(quantity, products(name, price))
+        kit_items!kit_items_kit_id_fkey(quantity, product:products!kit_items_product_id_fkey(name, price))
       `)
       .eq('category_id', categories.id);
 
@@ -32,7 +32,7 @@ export async function GET() {
       price: kit.price,
       imageUrl: kit.image_url,
       description: kit.description,
-      items: kit.kit_items?.map((ki: any) => `${ki.products?.name || 'Produto'} (x${ki.quantity})`).join(', ') || '',
+      items: kit.kit_items?.map((ki: any) => `${ki.product?.name || 'Produto'} (x${ki.quantity})`).join(', ') || '',
     }));
 
     return NextResponse.json(formattedKits);
