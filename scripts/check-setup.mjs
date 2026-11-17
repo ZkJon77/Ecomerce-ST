@@ -8,7 +8,8 @@ const requiredVariables = [
   "NEXT_PUBLIC_SUPABASE_URL",
   "NEXT_PUBLIC_SUPABASE_ANON_KEY",
   "SUPABASE_SERVICE_ROLE_KEY",
-  "MP_ACCESS_TOKEN",
+  "ASAAS_API_KEY",
+  "ASAAS_WEBHOOK_TOKEN",
 ]
 
 let missingVariables = false
@@ -41,17 +42,19 @@ if (!appUrl) {
   }
 }
 
-const setupSql = resolve(process.cwd(), "supabase_setup.sql")
-if (!existsSync(setupSql)) {
-  console.error("FALTA supabase_setup.sql não foi encontrado.")
-  missingVariables = true
-} else {
-  console.log("OK supabase_setup.sql encontrado (execute-o manualmente no SQL Editor do Supabase).")
+for (const file of ["supabase_setup.sql", "supabase_asaas_migration.sql"]) {
+  const filePath = resolve(process.cwd(), file)
+  if (!existsSync(filePath)) {
+    console.error(`FALTA ${file}`)
+    missingVariables = true
+  } else {
+    console.log(`OK ${file} encontrado (execute no SQL Editor do Supabase quando indicado).`)
+  }
 }
 
 if (missingVariables) {
-  console.error("\nConfiguração incompleta. Preencha as variáveis em .env.local e execute npm run setup:check novamente.")
+  console.error("\\nConfiguração incompleta. Preencha as variáveis em .env.local e execute npm run setup:check novamente.")
   process.exitCode = 1
 } else {
-  console.log("\nVariáveis configuradas. Confirme no Supabase que supabase_setup.sql já foi executado.")
+  console.log("\\nVariáveis configuradas. Confirme no Supabase que os scripts SQL já foram executados.")
 }
