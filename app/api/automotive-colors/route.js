@@ -90,6 +90,22 @@ async function saveColors(modelId, colors) {
   if (error) throw error;
 }
 
+async function recordColorSearches(items, manufacturer, model) {
+  if (!hasSupabaseAdminConfig || !items?.length) return;
+  await Promise.all(items.slice(0, MAX_RESULTS).map((item) =>
+    supabaseAdmin.rpc("record_automotive_color_search", {
+      p_source_color_id: String(item.source_reference || item.id),
+      p_manufacturer: manufacturer || item.manufacturer,
+      p_model: model || item.model,
+      p_color_name: item.color_name || item.name || "Cor automotiva",
+      p_manufacturer_code: item.color_code && item.color_code !== "Código não informado" ? item.color_code : (item.manufacturer_code || null),
+      p_hex_code: /^#[0-9a-f]{6}$/i.test(item.color_hex || item.hex_code || "") ? (item.color_hex || item.hex_code) : null,
+    }).then(({ error }) => {
+      if (error) console.error("[automotive-colors] Search statistic write failed:", error.message);
+    })
+  ));
+}
+
 async function readCachedColors(makeName, modelName, code, query, year) {
   if (!hasSupabaseAdminConfig) return null;
   const { data: make } = await supabaseAdmin
@@ -184,6 +200,7 @@ export async function GET(request) {
 
   const existingCache = await readCachedColors(manufacturer, modelName, code, query, year).catch(() => null);
   if (existingCache?.fresh) {
+    await recordColorSearches(existingCache.results, manufacturer, modelName);
     return NextResponse.json({
       ...existingCache,
       notice: "Resultados servidos pelo cache atualizado do Supabase. " + existingCache.notice,
@@ -232,20 +249,12 @@ export async function GET(request) {
       console.error("[automotive-colors] Supabase cache write failed:", cacheError.message);
     }
 
-    if (hasSupabaseAdminConfig) {
-      await Promise.all(filtered.slice(0, MAX_RESULTS).map((item) =>
-        supabaseAdmin.rpc("record_automotive_color_search", {
-          p_source_color_id: String(item.id),
-          p_manufacturer: make.name,
-          p_model: foundModel.name,
-          p_color_name: item.name || "Cor automotiva",
-          p_manufacturer_code: item.manufacturerCode || null,
-          p_hex_code: /^#[0-9a-f]{6}$/i.test(item.hexCode || "") ? item.hexCode : null,
-        }).then(({ error }) => {
-          if (error) console.error("[automotive-colors] Search statistic write failed:", error.message);
-        })
-      ));
-    }
+    await recordColorSearches(filtered.slice(0, MAX_RESULTS).map((item) => ({
+      source_reference: item.id,
+      color_name: item.name,
+      color_code: item.manufacturerCode,
+      color_hex: item.hexCode,
+    })), make.name, foundModel.name);
 
     const results = filtered.slice(0, MAX_RESULTS).map((item) => ({
       ...normalizeColor({
