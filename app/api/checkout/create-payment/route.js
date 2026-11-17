@@ -21,11 +21,12 @@ function getPublicBaseUrl() {
 
 export async function POST(req) {
   let orderId = null;
+  let checkoutStage = 'request_validation';
   try {
     const body = await req.json();
     const { cart, userData, paymentMethod = 'pix' } = body;
     if (!hasSupabaseAdminConfig || !supabaseAdmin) {
-      return NextResponse.json({ error: 'Supabase não está configurado para salvar pedidos. Confira a chave administrativa do projeto no ambiente do servidor.' }, { status: 503 });
+      return NextResponse.json({ error: 'Supabase não está configurado para salvar pedidos. Confira SUPABASE_URL e a chave administrativa no ambiente do servidor.', diagnostic: { stage: 'supabase_configuration' } }, { status: 503 });
     }
     let authenticatedUserId = null;
     const authorization = req.headers.get('authorization');
@@ -57,6 +58,7 @@ export async function POST(req) {
     const databaseCatalog = new Map();
 
     if (databaseIds.length) {
+      checkoutStage = 'product_lookup';
       const { data: databaseProducts, error: productsError } = await supabaseAdmin
         .from('products')
         .select('id,name,price')
@@ -110,6 +112,7 @@ export async function POST(req) {
 
     const amount = verifiedCart.reduce((sum, item) => sum + item.price * item.qty, 0);
     const baseUrl = getPublicBaseUrl();
+    checkoutStage = 'order_insert';
 
     try {
       const { data: order, error: orderError } = await supabaseAdmin
@@ -124,6 +127,7 @@ export async function POST(req) {
           total_amount: amount,
           payment_method: paymentMethod,
           status: 'pending',
+          shipping_status: 'not_shipped',
         })
         .select()
         .single();
@@ -140,6 +144,7 @@ export async function POST(req) {
         price: item.price,
       }));
 
+      checkoutStage = 'order_items_insert';
       const { error: itemsError } = await supabaseAdmin.from('order_items').insert(orderItems);
       if (itemsError) throw itemsError;
     } catch (dbError) {
@@ -150,9 +155,18 @@ export async function POST(req) {
         hint: dbError?.hint,
         orderId,
       });
-      throw new Error('Não foi possível registrar o pedido. Verifique a configuração do Supabase.');
+      if (orderId) {
+        const { error: rollbackError } = await supabaseAdmin.from('orders').delete().eq('id', orderId);
+        if (rollbackError) console.error('Checkout order rollback failed:', { code: rollbackError.code, message: rollbackError.message, orderId });
+        orderId = null;
+      }
+      return NextResponse.json({
+        error: 'Não foi possível registrar o pedido. Verifique a configuração do Supabase.',
+        diagnostic: { stage: checkoutStage, code: dbError?.code || 'UNKNOWN' },
+      }, { status: 500 });
     }
 
+    checkoutStage = 'mercadopago_preference';
     const client = new MercadoPagoConfig({ accessToken });
     const preference = new Preference(client);
 
@@ -203,7 +217,7 @@ export async function POST(req) {
     }
     console.error('Checkout Error:', error);
     return NextResponse.json(
-      { error: error.message || 'Erro interno no servidor' },
+      { error: error.message || 'Erro interno no servidor', diagnostic: { stage: checkoutStage } },
       { status: 500 },
     );
   }
