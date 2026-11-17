@@ -193,6 +193,7 @@ export async function GET(request) {
   }
 
   if (action === "reference-colors") {
+    if (!hasSupabaseAdminConfig) return NextResponse.json({ error: "Catálogo indisponível: configure a conexão administrativa do Supabase." }, { status: 503 });
     const makeId = (params.get("makeId") || "").trim();
     const modelId = (params.get("modelId") || "").trim();
     const code = (params.get("code") || "").trim().slice(0, 60);
