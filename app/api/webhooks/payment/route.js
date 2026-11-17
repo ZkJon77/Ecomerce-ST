@@ -1,76 +1,40 @@
 import { NextResponse } from 'next/server';
-import { MercadoPagoConfig, Payment, WebhookSignatureValidator } from 'mercadopago';
+import { timingSafeEqual } from 'node:crypto';
 import { hasSupabaseAdminConfig, supabaseAdmin } from '@/lib/supabase-admin';
+import { asaasRequest, mapAsaasStatus, normalizeAsaasMethod } from '@/lib/asaas';
 import { sendOrderNotification } from '@/lib/whatsapp';
+
+function validWebhookToken(received, expected) {
+  if (!received || !expected) return false;
+  const a = Buffer.from(received);
+  const b = Buffer.from(expected);
+  return a.length === b.length && timingSafeEqual(a, b);
+}
 
 function cents(value) {
   return Math.round(Number(value) * 100);
 }
 
-function mapPaymentStatus(status) {
-  if (status === 'approved') return 'approved';
-  if (status === 'rejected') return 'rejected';
-  if (status === 'cancelled') return 'canceled';
-  if (status === 'refunded' || status === 'charged_back') return 'refunded';
-  return 'pending';
-}
-
 export async function POST(req) {
   try {
-    const webhookSecret = process.env.MP_WEBHOOK_SECRET;
-    if (!webhookSecret) {
-      console.error('MP_WEBHOOK_SECRET não configurado.');
-      return NextResponse.json({ error: 'Webhook não configurado.' }, { status: 503 });
+    const expectedToken = process.env.ASAAS_WEBHOOK_TOKEN?.trim();
+    const receivedToken = req.headers.get('asaas-access-token');
+    if (!validWebhookToken(receivedToken, expectedToken)) {
+      return NextResponse.json({ error: 'Webhook não autorizado.' }, { status: 401 });
     }
-
-    const url = new URL(req.url);
-    const xSignature = req.headers.get('x-signature');
-    const xRequestId = req.headers.get('x-request-id');
-    const dataId = url.searchParams.get('data.id') || url.searchParams.get('id');
-
-    if (!xSignature || !xRequestId) {
-      return NextResponse.json({ error: 'Assinatura do webhook ausente.' }, { status: 401 });
-    }
-
-    try {
-      WebhookSignatureValidator.validate({
-        xSignature,
-        xRequestId,
-        dataId,
-        secret: webhookSecret,
-      });
-    } catch {
-      return NextResponse.json({ error: 'Assinatura do webhook inválida.' }, { status: 401 });
+    if (!hasSupabaseAdminConfig || !supabaseAdmin) {
+      return NextResponse.json({ error: 'Banco de dados indisponível.' }, { status: 503 });
     }
 
     const body = await req.json().catch(() => ({}));
-    const paymentId = dataId || body?.data?.id || body?.id;
-    const eventType = url.searchParams.get('type') || body?.type ||
-      (String(body?.action || '').startsWith('payment.') ? 'payment' : null);
+    const event = String(body.event || '');
+    const paymentId = body.payment?.id;
+    if (!event || !paymentId) return NextResponse.json({ ok: true, ignored: true });
 
-    if (eventType !== 'payment' || !paymentId) {
-      return NextResponse.json({ ok: true, ignored: true }, { status: 200 });
-    }
-
-    if (!hasSupabaseAdminConfig || !supabaseAdmin) {
-      console.error('Credenciais administrativas do Supabase não configuradas.');
-      return NextResponse.json({ error: 'Banco de dados não configurado.' }, { status: 503 });
-    }
-
-    const accessToken = process.env.MP_ACCESS_TOKEN;
-    if (!accessToken) {
-      return NextResponse.json({ error: 'Mercado Pago não configurado.' }, { status: 503 });
-    }
-
-    const client = new MercadoPagoConfig({ accessToken });
-    const paymentClient = new Payment(client);
-    const payment = await paymentClient.get({ id: String(paymentId) });
-
-    // O vínculo confiável é o external_reference devolvido pela API do Mercado Pago.
-    const orderId = payment.external_reference;
-    if (!orderId) {
-      return NextResponse.json({ ok: true, ignored: true, reason: 'Pedido não identificado.' }, { status: 200 });
-    }
+    // O payload recebido serve apenas para localizar a cobrança; a API do Asaas confirma os dados.
+    const payment = await asaasRequest(`/payments/${encodeURIComponent(String(paymentId))}`, { method: 'GET' });
+    const orderId = String(payment.externalReference || '');
+    if (!orderId) return NextResponse.json({ ok: true, ignored: true });
 
     const { data: order, error: orderError } = await supabaseAdmin
       .from('orders')
@@ -79,45 +43,38 @@ export async function POST(req) {
       .single();
 
     if (orderError || !order) {
-      console.error('Pedido do webhook não encontrado:', orderError);
+      console.error('Asaas webhook order not found:', orderError);
       return NextResponse.json({ error: 'Pedido não encontrado.' }, { status: 404 });
     }
 
-    if (payment.currency_id !== 'BRL' || cents(payment.transaction_amount) !== cents(order.total_amount)) {
-      console.error('Valor/moeda do pagamento não corresponde ao pedido.', {
-        orderId,
-        paymentId,
-        currency: payment.currency_id,
-      });
+    if (cents(payment.value) !== cents(order.total_amount)) {
+      console.error('Asaas payment amount mismatch:', { orderId, paymentId });
       return NextResponse.json({ error: 'Pagamento não corresponde ao pedido.' }, { status: 409 });
     }
 
-    const nextStatus = mapPaymentStatus(payment.status);
-    // Uma notificação atrasada não pode rebaixar um pedido já aprovado.
-    const finalStatus = order.status === 'approved' && nextStatus !== 'refunded'
+    const nextStatus = mapAsaasStatus(event, payment.status);
+    const finalStatus = order.status === 'approved' && !['refunded', 'canceled'].includes(nextStatus)
       ? 'approved'
       : nextStatus;
 
-    const { error: updateError } = await supabaseAdmin
-      .from('orders')
-      .update({
-        status: finalStatus,
-        payment_id: String(payment.id),
-        payment_method: payment.payment_type_id || payment.payment_method_id || null,
-      })
-      .eq('id', orderId);
+    const update = {
+      status: finalStatus,
+      payment_id: String(payment.id),
+      payment_provider: 'asaas',
+    };
+    const method = normalizeAsaasMethod(payment.billingType);
+    if (method) update.payment_method = method;
 
+    const { error: updateError } = await supabaseAdmin.from('orders').update(update).eq('id', orderId);
     if (updateError) {
-      console.error('Falha ao atualizar o pedido:', updateError);
+      console.error('Asaas order update failed:', updateError);
       return NextResponse.json({ error: 'Não foi possível atualizar o pedido.' }, { status: 500 });
     }
 
-    // A loja só recebe o pedido para preparação depois da confirmação real do pagamento.
-    // A reivindicação temporária reduz notificações duplicadas em reenvios do webhook.
+    // A reivindicação no banco impede que reenvios do mesmo evento notifiquem a loja duas vezes.
     if (finalStatus === 'approved' && !order.store_notified_at) {
       const staleClaim = new Date(Date.now() - 10 * 60 * 1000).toISOString();
-      const { data: claim, error: claimError } = await supabaseAdmin
-        .from('orders')
+      const { data: claim, error: claimError } = await supabaseAdmin.from('orders')
         .update({ store_notification_claimed_at: new Date().toISOString() })
         .eq('id', orderId)
         .is('store_notified_at', null)
@@ -126,16 +83,12 @@ export async function POST(req) {
         .maybeSingle();
 
       if (claimError) {
-        console.error('Não foi possível reservar o aviso do pedido:', claimError);
+        console.error('Asaas notification claim failed:', claimError);
       } else if (claim) {
-        const { data: items, error: itemsError } = await supabaseAdmin
-          .from('order_items')
-          .select('product_name,quantity,price')
-          .eq('order_id', orderId);
+        const { data: items, error: itemsError } = await supabaseAdmin.from('order_items')
+          .select('product_name,quantity,price').eq('order_id', orderId);
 
-        if (itemsError) {
-          console.error('Não foi possível carregar os itens para avisar a loja:', itemsError);
-        } else {
+        if (!itemsError) {
           const notification = await sendOrderNotification({
             orderId,
             name: order.customer_name,
@@ -143,7 +96,7 @@ export async function POST(req) {
             phone: order.customer_phone,
             address: order.customer_address,
             total: Number(order.total_amount),
-            paymentMethod: payment.payment_type_id || payment.payment_method_id || 'Mercado Pago',
+            paymentMethod: method || 'Asaas',
           }, (items || []).map(item => ({
             name: item.product_name,
             qty: item.quantity,
@@ -151,28 +104,22 @@ export async function POST(req) {
           })));
 
           if (notification?.ok) {
-            const { error: notifiedError } = await supabaseAdmin
-              .from('orders')
-              .update({
-                store_notified_at: new Date().toISOString(),
-                store_notification_claimed_at: null,
-              })
-              .eq('id', orderId);
-            if (notifiedError) console.error('Pedido avisado, mas não foi possível registrar o aviso:', notifiedError);
+            await supabaseAdmin.from('orders').update({
+              store_notified_at: new Date().toISOString(),
+              store_notification_claimed_at: null,
+            }).eq('id', orderId);
           } else {
-            await supabaseAdmin
-              .from('orders')
-              .update({ store_notification_claimed_at: null })
-              .eq('id', orderId);
-            console.warn('Pedido aprovado, mas o aviso à loja não foi enviado. Verifique WHATSAPP_API_URL e STORE_PHONE.');
+            await supabaseAdmin.from('orders').update({ store_notification_claimed_at: null }).eq('id', orderId);
           }
+        } else {
+          await supabaseAdmin.from('orders').update({ store_notification_claimed_at: null }).eq('id', orderId);
         }
       }
     }
 
     return NextResponse.json({ ok: true }, { status: 200 });
   } catch (error) {
-    console.error('Webhook Error:', error);
+    console.error('Asaas webhook error:', error);
     return NextResponse.json({ error: 'Falha ao processar webhook.' }, { status: 500 });
   }
 }
