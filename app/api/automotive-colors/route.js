@@ -142,6 +142,30 @@ async function readCachedColors(makeName, modelName, code, query, year) {
 
 export async function GET(request) {
   const params = new URL(request.url).searchParams;
+
+  if (params.get("popular") === "1") {
+    if (!hasSupabaseAdminConfig) {
+      return NextResponse.json({ error: "O catálogo de destaques está temporariamente indisponível." }, { status: 503 });
+    }
+    const [{ data: vehicles, error: vehiclesError }, { data: popularColors, error: colorsError }] = await Promise.all([
+      supabaseAdmin.from("automotive_featured_vehicles")
+        .select("manufacturer,model,sales_rank,reference_month,source_name,source_url")
+        .eq("active", true).order("sales_rank").limit(12),
+      supabaseAdmin.from("automotive_color_search_stats")
+        .select("source_color_id,manufacturer,model,color_name,manufacturer_code,hex_code,searches,last_searched_at")
+        .order("searches", { ascending: false }).order("last_searched_at", { ascending: false }).limit(12),
+    ]);
+    if (vehiclesError || colorsError) {
+      console.error("[automotive-colors] Popular section read failed:", vehiclesError?.message || colorsError?.message);
+      return NextResponse.json({ error: "Não foi possível carregar os destaques automotivos." }, { status: 500 });
+    }
+    return NextResponse.json({
+      vehicles: vehicles || [],
+      popularColors: popularColors || [],
+      popularityBasis: "Modelos: ranking Fenabrave de outubro/2026. Cores: pesquisas reais registradas no site.",
+    });
+  }
+
   const code = (params.get("code") || "").trim().slice(0, 60);
   const manufacturer = (params.get("manufacturer") || "").trim().slice(0, 80);
   const modelName = (params.get("model") || "").trim().slice(0, 80);
@@ -206,6 +230,21 @@ export async function GET(request) {
       cachePersisted = hasSupabaseAdminConfig;
     } catch (cacheError) {
       console.error("[automotive-colors] Supabase cache write failed:", cacheError.message);
+    }
+
+    if (hasSupabaseAdminConfig) {
+      await Promise.all(filtered.slice(0, MAX_RESULTS).map((item) =>
+        supabaseAdmin.rpc("record_automotive_color_search", {
+          p_source_color_id: String(item.id),
+          p_manufacturer: make.name,
+          p_model: foundModel.name,
+          p_color_name: item.name || "Cor automotiva",
+          p_manufacturer_code: item.manufacturerCode || null,
+          p_hex_code: /^#[0-9a-f]{6}$/i.test(item.hexCode || "") ? item.hexCode : null,
+        }).then(({ error }) => {
+          if (error) console.error("[automotive-colors] Search statistic write failed:", error.message);
+        })
+      ));
     }
 
     const results = filtered.slice(0, MAX_RESULTS).map((item) => ({
