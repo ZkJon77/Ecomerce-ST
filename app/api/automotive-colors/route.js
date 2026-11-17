@@ -268,7 +268,9 @@ export async function GET(request) {
       color_hex: null,
       finish: null,
       paint_system: null,
-      notes: item.data_confidence || "Referência não validada pelo fabricante.",
+      notes: (item.data_confidence || "").startsWith("Genérica")
+        ? "Cor genérica para referência visual; não representa uma opção oficial confirmada pelo fabricante."
+        : "Nome de referência ainda não conferido em catálogo oficial. Confirme a nomenclatura e o código na etiqueta do veículo.",
       source_name: "Planilha de referência Silver Tintas",
       verified_at: null,
     }));
