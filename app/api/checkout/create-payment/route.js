@@ -160,9 +160,14 @@ export async function POST(req) {
         if (rollbackError) console.error('Checkout order rollback failed:', { code: rollbackError.code, message: rollbackError.message, orderId });
         orderId = null;
       }
+      const diagnosticCode = dbError?.code || 'UNKNOWN';
+      console.error('Checkout database diagnostic:', {
+        stage: checkoutStage,
+        code: diagnosticCode,
+      });
       return NextResponse.json({
-        error: 'Não foi possível registrar o pedido. Verifique a configuração do Supabase.',
-        diagnostic: { stage: checkoutStage, code: dbError?.code || 'UNKNOWN' },
+        error: `Não foi possível registrar o pedido no banco (etapa: ${checkoutStage}; código: ${diagnosticCode}). Execute supabase_checkout_mercadopago_fix.sql no Supabase e confira as variáveis do projeto.`,
+        diagnostic: { stage: checkoutStage, code: diagnosticCode },
       }, { status: 500 });
     }
 
