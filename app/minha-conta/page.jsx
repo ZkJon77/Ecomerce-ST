@@ -8,6 +8,14 @@ import { supabase, hasSupabasePublicConfig } from "@/lib/supabase";
 
 const money = (value) => Number(value || 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 const date = (value) => value ? new Date(value).toLocaleString("pt-BR") : "—";
+const shippingLabel = (value) => ({
+  not_shipped: "Aguardando envio",
+  preparing: "Em preparação",
+  shipped: "Enviado",
+  out_for_delivery: "Saiu para entrega",
+  delivered: "Entregue",
+  cancelled: "Entrega cancelada",
+}[value] || "Aguardando atualização");
 
 export default function AccountPage() {
   const router = useRouter();
@@ -33,7 +41,7 @@ export default function AccountPage() {
       }
       const [profileResult, ordersResult, wishlistResult] = await Promise.all([
         supabase.from("profiles").select("full_name, phone, address").eq("id", currentUser.id).maybeSingle(),
-        supabase.from("orders").select("id, total_amount, status, payment_method, created_at, order_items(id, product_name, quantity, price)").eq("user_id", currentUser.id).order("created_at", { ascending: false }),
+        supabase.from("orders").select("id, total_amount, status, payment_method, shipping_status, tracking_code, shipped_at, delivered_at, created_at, order_items(id, product_name, quantity, price)").eq("user_id", currentUser.id).order("created_at", { ascending: false }),
         supabase.from("wishlist_items").select("id, product_key, product_snapshot, created_at").eq("user_id", currentUser.id).order("created_at", { ascending: false }),
       ]);
       if (!active) return;
@@ -109,7 +117,9 @@ export default function AccountPage() {
           <h2 style={{ display: "flex", alignItems: "center", gap: 9, color: "#1a1464", fontSize: 20, margin: "0 0 16px" }}><Package size={20}/> Histórico de compras</h2>
           {orders.length === 0 ? <p style={{ color: "#737b91" }}>Você ainda não tem pedidos associados a esta conta.</p> : orders.map(order => <article key={order.id} style={{ borderTop: "1px solid #edf0f5", padding: "15px 0" }}>
             <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}><strong>Pedido #{String(order.id).slice(0,8)}</strong><span style={{ color: "#626b80" }}>{date(order.created_at)}</span></div>
-            <p style={{ margin: "7px 0", color: "#626b80" }}>Status: <strong>{order.status || "pending"}</strong> · Pagamento: {order.payment_method || "—"} · Total: <strong>{money(order.total_amount)}</strong></p>
+            <p style={{ margin: "7px 0", color: "#626b80" }}>Pagamento: <strong>{order.status || "pending"}</strong> · Forma: {order.payment_method || "—"} · Total: <strong>{money(order.total_amount)}</strong></p>
+            <p style={{ margin: "7px 0", color: "#626b80" }}>Entrega: <strong>{shippingLabel(order.shipping_status)}</strong>{order.tracking_code ? " · Rastreamento: " + order.tracking_code : ""}</p>
+            {order.shipped_at && <p style={{ margin: "4px 0", color: "#7b8498", fontSize: 12 }}>Enviado em {date(order.shipped_at)}{order.delivered_at ? " · Entregue em " + date(order.delivered_at) : ""}</p>}
             <ul style={{ margin: 0, paddingLeft: 20, color: "#626b80" }}>{(order.order_items || []).map(item => <li key={item.id}>{item.product_name} — {item.quantity} × {money(item.price)}</li>)}</ul>
           </article>)}
         </section>
