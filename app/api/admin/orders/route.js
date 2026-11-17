@@ -64,11 +64,14 @@ export async function PATCH(request) {
 
   const { data: before, error: readError } = await supabaseAdmin
     .from('orders')
-    .select('id,customer_phone,shipping_status')
+    .select('id,customer_phone,shipping_status,status')
     .eq('id', orderId)
     .maybeSingle();
   if (readError || !before) {
     return NextResponse.json({ error: 'Pedido não encontrado.' }, { status: 404 });
+  }
+  if (before.status !== 'approved' && shippingStatus !== 'cancelled') {
+    return NextResponse.json({ error: 'A entrega só pode ser atualizada depois da confirmação do pagamento.' }, { status: 409 });
   }
 
   const update = { shipping_status: shippingStatus, tracking_code: trackingCode || null };
