@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useMemo, useState } from "react"
+import React, { useEffect, useMemo, useState } from "react"
 import { Search, CarFront, Palette, AlertCircle, CheckCircle2, Loader2, Info, RotateCcw } from "lucide-react"
 
 const FIELD_STYLE = {
@@ -66,6 +66,26 @@ export default function ColorPage() {
   const [loading, setLoading] = useState(false)
   const [searched, setSearched] = useState(false)
   const [error, setError] = useState("")
+  const [popularVehicles, setPopularVehicles] = useState([])
+  const [popularColors, setPopularColors] = useState([])
+
+  useEffect(() => {
+    let active = true
+    fetch("/api/automotive-colors?popular=1", { cache: "no-store" })
+      .then(response => response.ok ? response.json() : Promise.reject(new Error("Destaques indisponíveis")))
+      .then(payload => {
+        if (!active) return
+        setPopularVehicles(Array.isArray(payload.vehicles) ? payload.vehicles : [])
+        setPopularColors(Array.isArray(payload.popularColors) ? payload.popularColors : [])
+      })
+      .catch(() => {
+        if (active) {
+          setPopularVehicles([])
+          setPopularColors([])
+        }
+      })
+    return () => { active = false }
+  }, [])
 
   const canSearch = useMemo(() => mode === "code"
     ? Boolean(code.trim() && manufacturer.trim() && model.trim())
@@ -182,6 +202,75 @@ export default function ColorPage() {
             </button>
           </div>
         </form>
+      </section>
+
+      <section style={{ marginTop: 24, padding: "22px clamp(16px,3vw,24px)", background: "#f7f8fc", border: "1px solid #e5e8f1", borderRadius: 16 }}>
+        <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "space-between", gap: 8, alignItems: "end", marginBottom: 14 }}>
+          <div>
+            <h2 style={{ color: "#171d45", fontSize: 19, margin: 0 }}>Veículos em destaque no Brasil</h2>
+            <p style={{ color: "#69738a", fontSize: 12, margin: "5px 0 0" }}>Seleção baseada no ranking Fenabrave de outubro de 2026. Escolha um modelo para consultar as cores disponíveis.</p>
+          </div>
+          <span style={{ fontSize: 10, color: "#7c8498" }}>Fonte: Fenabrave</span>
+        </div>
+        {popularVehicles.length > 0 ? (
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(145px,1fr))", gap: 9 }}>
+            {popularVehicles.map((vehicle) => (
+              <button key={vehicle.manufacturer + vehicle.model} type="button"
+                onClick={() => {
+                  setMode("vehicle")
+                  setManufacturer(vehicle.manufacturer)
+                  setModel(vehicle.model)
+                  setCode("")
+                  setQuery("")
+                  setYear("")
+                  setResults([])
+                  setError("")
+                  setSearched(false)
+                }}
+                style={{ textAlign: "left", padding: "12px 13px", border: "1px solid #e0e4ef", borderRadius: 10, background: "#fff", cursor: "pointer" }}>
+                <span style={{ display: "block", color: "#777f95", fontSize: 10, fontWeight: 800 }}>#{vehicle.sales_rank} · {vehicle.manufacturer}</span>
+                <strong style={{ display: "block", color: "#20265a", fontSize: 13, marginTop: 4 }}>{vehicle.model}</strong>
+                <span style={{ display: "block", color: "#6b7390", fontSize: 10, marginTop: 7 }}>Selecionar veículo →</span>
+              </button>
+            ))}
+          </div>
+        ) : (
+          <p style={{ margin: 0, color: "#69738a", fontSize: 12 }}>Os destaques serão exibidos assim que o serviço de consulta estiver disponível.</p>
+        )}
+      </section>
+
+      <section style={{ marginTop: 18, padding: "22px clamp(16px,3vw,24px)", background: "#fff", border: "1px solid #e5e8f1", borderRadius: 16 }}>
+        <div style={{ marginBottom: 14 }}>
+          <h2 style={{ color: "#171d45", fontSize: 19, margin: 0 }}>Cores mais consultadas</h2>
+          <p style={{ color: "#69738a", fontSize: 12, margin: "5px 0 0" }}>Ranking calculado com as pesquisas reais feitas na Silver Tintas. Ele cresce conforme os clientes consultam o catálogo.</p>
+        </div>
+        {popularColors.length > 0 ? (
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(210px,1fr))", gap: 9 }}>
+            {popularColors.map((color) => (
+              <button key={color.source_color_id} type="button"
+                onClick={() => {
+                  setMode("vehicle")
+                  setManufacturer(color.manufacturer)
+                  setModel(color.model)
+                  setQuery(color.color_name)
+                  setCode("")
+                  setYear("")
+                  setResults([])
+                  setError("")
+                  setSearched(false)
+                }}
+                style={{ display: "flex", alignItems: "center", gap: 10, textAlign: "left", padding: 11, border: "1px solid #e4e7ef", borderRadius: 10, background: "#fff", cursor: "pointer" }}>
+                <span style={{ width: 34, height: 34, borderRadius: 8, flexShrink: 0, background: color.hex_code || "linear-gradient(135deg,#d8dbe2,#f8f8fa)", border: "1px solid #d9dce5" }} />
+                <span style={{ minWidth: 0 }}>
+                  <strong style={{ display: "block", color: "#20265a", fontSize: 12 }}>{color.color_name}</strong>
+                  <span style={{ display: "block", color: "#6b7390", fontSize: 10 }}>{color.manufacturer} {color.model} · {color.searches} consulta(s)</span>
+                </span>
+              </button>
+            ))}
+          </div>
+        ) : (
+          <p style={{ margin: 0, color: "#69738a", fontSize: 12 }}>Ainda não há volume suficiente de pesquisas para montar um ranking. As primeiras consultas reais serão registradas aqui.</p>
+        )}
       </section>
 
       <section style={{ marginTop: 18, borderRadius: 12, background: "#f1f4ff", border: "1px solid #dfe5ff", padding: 15, display: "flex", gap: 10, alignItems: "flex-start" }}>
