@@ -149,10 +149,17 @@ export async function POST(req) {
       if (itemsError) throw itemsError;
     } catch (dbError) {
       console.error('Failed to save checkout order:', {
-        code: dbError?.code,
+        stage: checkoutStage,
+        name: dbError?.name || null,
+        code: dbError?.code || dbError?.cause?.code || null,
         message: dbError?.message || String(dbError),
-        details: dbError?.details,
-        hint: dbError?.hint,
+        details: dbError?.details || null,
+        hint: dbError?.hint || null,
+        cause: dbError?.cause?.message || null,
+        causeCode: dbError?.cause?.code || null,
+        errno: dbError?.cause?.errno || null,
+        syscall: dbError?.cause?.syscall || null,
+        hostname: dbError?.cause?.hostname || null,
         orderId,
       });
       if (orderId) {
