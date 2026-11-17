@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server';
 import { MercadoPagoConfig, Preference } from 'mercadopago';
 import { hasSupabaseAdminConfig, supabaseAdmin } from '../../../../lib/supabase-admin';
-import { sendOrderNotification } from '../../../../lib/whatsapp';
 import { KITS, PRODUCTS } from '../../../../lib/constants';
 
 function getPublicBaseUrl() {
@@ -152,21 +151,6 @@ export async function POST(req) {
     }
 
     const preferenceResult = await preference.create({ body: preferenceBody });
-
-    try {
-      await sendOrderNotification(
-        {
-          name: userData.name,
-          phone: userData.phone,
-          address: userData.address,
-          total: amount,
-          paymentMethod,
-        },
-        verifiedCart,
-      );
-    } catch (notificationError) {
-      console.warn('WhatsApp notification skipped:', notificationError.message || notificationError);
-    }
 
     return NextResponse.json({
       ok: true,
