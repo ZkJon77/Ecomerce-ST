@@ -127,6 +127,7 @@ export async function POST(req) {
           customer_address: userData.address,
           total_amount: amount,
           payment_method: paymentMethod,
+          payment_provider: 'mercadopago',
           status: 'pending',
           shipping_status: 'not_shipped',
         })
@@ -209,7 +210,7 @@ export async function POST(req) {
       payer: {
         name: userData.name,
         email: userData.email,
-        ...(userData.cpf ? { identification: { type: 'CPF', number: String(userData.cpf).replace(/\\D/g, '') } } : {}),
+        ...(userData.cpf ? { identification: { type: 'CPF', number: String(userData.cpf).replace(/\D/g, '') } } : {}),
       },
       payment_methods: {
         excluded_payment_types: (excludedPaymentTypesByMethod[paymentMethod] || []).map((id) => ({ id })),
@@ -234,9 +235,18 @@ export async function POST(req) {
 
     const preferenceResult = await preference.create({ body: preferenceBody });
 
+    const isSandboxToken = accessToken.startsWith('TEST-');
+    const checkoutUrl = isSandboxToken
+      ? (preferenceResult.sandbox_init_point || preferenceResult.init_point)
+      : preferenceResult.init_point;
+
+    if (!checkoutUrl) {
+      throw new Error('Mercado Pago criou a preferência, mas não retornou uma URL de checkout.');
+    }
+
     return NextResponse.json({
       ok: true,
-      init_point: preferenceResult.init_point,
+      init_point: checkoutUrl,
       preference_id: preferenceResult.id,
       orderId,
     });
