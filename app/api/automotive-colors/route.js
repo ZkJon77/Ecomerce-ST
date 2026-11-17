@@ -186,6 +186,18 @@ export async function GET(request) {
         brand: item.name,
         country: item.country || "País não informado",
       }));
+      if (hasSupabaseAdminConfig && makes.length) {
+        const now = new Date().toISOString();
+        const { error: cacheError } = await supabaseAdmin
+          .from("automotive_catalog_makes")
+          .upsert(makes.map(item => ({
+            source_id: item.id,
+            name: item.brand,
+            country_code: item.country === "País não informado" ? null : item.country,
+            synced_at: now,
+          })), { onConflict: "source_id" });
+        if (cacheError) console.error("[automotive-colors] make cache write failed:", cacheError.message);
+      }
       return NextResponse.json({
         makes,
         count: makes.length,
@@ -202,8 +214,24 @@ export async function GET(request) {
     const makeId = (params.get("makeId") || "").trim();
     if (!makeId) return NextResponse.json({ error: "Selecione uma montadora." }, { status: 400 });
     try {
-      const payload = await catalogGetAll("/v1/makes/" + encodeURIComponent(makeId) + "/models");
+      const [make, payload] = await Promise.all([
+        catalogGet("/v1/makes/" + encodeURIComponent(makeId)),
+        catalogGetAll("/v1/makes/" + encodeURIComponent(makeId) + "/models"),
+      ]);
       const models = payload.map((item) => ({ id: String(item.id), model: item.name }));
+      if (hasSupabaseAdminConfig) {
+        const now = new Date().toISOString();
+        const { error: makeError } = await supabaseAdmin
+          .from("automotive_catalog_makes")
+          .upsert({ source_id: String(make.id), name: make.name, country_code: make.country || null, synced_at: now }, { onConflict: "source_id" });
+        if (makeError) console.error("[automotive-colors] make cache write failed:", makeError.message);
+        if (models.length) {
+          const { error: modelError } = await supabaseAdmin
+            .from("automotive_catalog_models")
+            .upsert(models.map(item => ({ source_id: item.id, make_source_id: makeId, name: item.model, synced_at: now })), { onConflict: "source_id" });
+          if (modelError) console.error("[automotive-colors] model cache write failed:", modelError.message);
+        }
+      }
       return NextResponse.json({ models, count: models.length, source: "appByte Vehicle Catalog API" });
     } catch (error) {
       console.error("[automotive-colors] appByte models failed:", error.message);
