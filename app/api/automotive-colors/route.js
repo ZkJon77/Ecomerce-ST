@@ -158,6 +158,14 @@ export async function GET(request) {
     }, { status: 400 });
   }
 
+  const existingCache = await readCachedColors(manufacturer, modelName, code, query, year).catch(() => null);
+  if (existingCache?.fresh) {
+    return NextResponse.json({
+      ...existingCache,
+      notice: "Resultados servidos pelo cache atualizado do Supabase. " + existingCache.notice,
+    });
+  }
+
   try {
     const makePayload = await catalogGet("/v1/makes?search=" + encodeURIComponent(manufacturer) + "&pageSize=100");
     const makes = makePayload.items || [];
@@ -191,9 +199,11 @@ export async function GET(request) {
       );
     }
 
+    let cachePersisted = false;
     try {
       await saveMakeAndModel(make, foundModel);
       await saveColors(foundModel.id, catalogColors);
+      cachePersisted = hasSupabaseAdminConfig;
     } catch (cacheError) {
       console.error("[automotive-colors] Supabase cache write failed:", cacheError.message);
     }
@@ -211,7 +221,7 @@ export async function GET(request) {
       results,
       count: colorPayload.total ?? results.length,
       source: "fleetByte Catalog API",
-      cached: hasSupabaseAdminConfig,
+      cached: cachePersisted,
       notice: results.length
         ? "Catálogo automotivo público. Os dados foram consultados na fonte e armazenados em cache quando o Supabase está configurado. Não há fórmula de mistura nem confirmação por ano/versão."
         : "Nenhuma cor correspondente encontrada. O catálogo pode não conter todos os veículos vendidos no Brasil.",
