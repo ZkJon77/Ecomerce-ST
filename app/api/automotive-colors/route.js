@@ -7,6 +7,23 @@ const API_BASE = "https://fleetcatalog.disturbingbyte.pt";
 const MAX_RESULTS = 50;
 const CACHE_TTL_MS = 6 * 60 * 60 * 1000;
 
+
+async function catalogGetAll(path) {
+  const allItems = [];
+  let page = 1;
+  let total = null;
+  while (page <= 20) {
+    const separator = path.includes("?") ? "&" : "?";
+    const payload = await catalogGet(path + separator + "page=" + page + "&pageSize=100");
+    const items = Array.isArray(payload.items) ? payload.items : [];
+    allItems.push(...items);
+    total = Number.isFinite(payload.total) ? payload.total : allItems.length;
+    if (!items.length || allItems.length >= total || items.length < 100) break;
+    page += 1;
+  }
+  return allItems;
+}
+
 async function catalogGet(path) {
   const response = await fetch(API_BASE + path, {
     headers: { Accept: "application/json" },
@@ -159,6 +176,123 @@ async function readCachedColors(makeName, modelName, code, query, year) {
 export async function GET(request) {
   const params = new URL(request.url).searchParams;
   const action = params.get("action");
+
+  // Integração direta com o catálogo público appByte (sem chave e sem período de teste).
+  if (action === "live-makes") {
+    try {
+      const payload = await catalogGetAll("/v1/makes");
+      const makes = payload.map((item) => ({
+        id: String(item.id),
+        brand: item.name,
+        country: item.country || "País não informado",
+      }));
+      return NextResponse.json({
+        makes,
+        count: makes.length,
+        source: "appByte Vehicle Catalog API",
+        notice: "Catálogo público gratuito. A cobertura depende dos dados publicados pela comunidade.",
+      });
+    } catch (error) {
+      console.error("[automotive-colors] appByte makes failed:", error.message);
+      return NextResponse.json({ error: "Não foi possível carregar as montadoras do catálogo appByte." }, { status: 502 });
+    }
+  }
+
+  if (action === "live-models") {
+    const makeId = (params.get("makeId") || "").trim();
+    if (!makeId) return NextResponse.json({ error: "Selecione uma montadora." }, { status: 400 });
+    try {
+      const payload = await catalogGetAll("/v1/makes/" + encodeURIComponent(makeId) + "/models");
+      const models = payload.map((item) => ({ id: String(item.id), model: item.name }));
+      return NextResponse.json({ models, count: models.length, source: "appByte Vehicle Catalog API" });
+    } catch (error) {
+      console.error("[automotive-colors] appByte models failed:", error.message);
+      return NextResponse.json({ error: "Não foi possível carregar os modelos desta montadora." }, { status: 502 });
+    }
+  }
+
+  if (action === "live-colors") {
+    const makeId = (params.get("makeId") || "").trim();
+    const modelId = (params.get("modelId") || "").trim();
+    const code = (params.get("code") || "").trim().slice(0, 60);
+    const query = (params.get("q") || "").trim().slice(0, 100);
+    const yearValue = (params.get("year") || "").trim();
+    const year = yearValue ? Number(yearValue) : null;
+    if (!makeId || !modelId) return NextResponse.json({ error: "Selecione a montadora e o modelo." }, { status: 400 });
+    if (yearValue && (!Number.isInteger(year) || year < 1950 || year > 2035)) {
+      return NextResponse.json({ error: "Informe um ano válido para o veículo." }, { status: 400 });
+    }
+    try {
+      const [make, modelRecord] = await Promise.all([
+        catalogGet("/v1/makes/" + encodeURIComponent(makeId)),
+        catalogGet("/v1/makes/" + encodeURIComponent(makeId) + "/models/" + encodeURIComponent(modelId)),
+      ]);
+      if (!modelRecord || String(modelRecord.makeId) !== makeId) {
+        return NextResponse.json({ error: "O modelo não pertence à montadora selecionada." }, { status: 400 });
+      }
+
+      const catalogColors = await catalogGetAll("/v1/models/" + encodeURIComponent(modelId) + "/colors");
+      let filtered = catalogColors;
+      if (code) {
+        const normalized = code.toLowerCase();
+        filtered = filtered.filter((item) => (item.manufacturerCode || "").toLowerCase().includes(normalized));
+      } else if (query) {
+        const normalized = query.toLowerCase();
+        filtered = filtered.filter((item) =>
+          (item.name || "").toLowerCase().includes(normalized)
+          || (item.manufacturerCode || "").toLowerCase().includes(normalized)
+        );
+      }
+
+      try {
+        await saveMakeAndModel(make, modelRecord);
+        await saveColors(modelId, catalogColors);
+      } catch (cacheError) {
+        console.error("[automotive-colors] appByte cache write failed:", cacheError.message);
+      }
+
+      const results = filtered.slice(0, MAX_RESULTS).map((item) => ({
+        id: "appbyte-" + item.id,
+        source_reference: item.id,
+        manufacturer: make.name,
+        model: modelRecord.name,
+        year_start: null,
+        year_end: null,
+        color_code: item.manufacturerCode || "Código não informado",
+        color_name: item.name || "Cor automotiva",
+        color_group: null,
+        color_hex: /^#[0-9a-f]{6}$/i.test(item.hexCode || "") ? item.hexCode : null,
+        finish: null,
+        paint_system: null,
+        notes: year
+          ? "O catálogo lista a cor por modelo, mas não confirma a aplicação no ano " + year + ". Confira a etiqueta do veículo."
+          : "Registro do catálogo público. Confirme o código na etiqueta do veículo antes da preparação.",
+        source_name: "appByte Vehicle Catalog API",
+        source_reference: item.id,
+        verified_at: null,
+      }));
+
+      await recordColorSearches(results, make.name, modelRecord.name);
+      return NextResponse.json({
+        results,
+        count: results.length,
+        totalInCatalog: catalogColors.length,
+        source: "appByte Vehicle Catalog API",
+        notice: results.length
+          ? "Cores retornadas diretamente do catálogo público appByte. A base é gratuita, mas colaborativa e pode não conter todas as cores OEM brasileiras. Não fornece fórmula de mistura nem validação por ano/versão."
+          : catalogColors.length
+            ? "O modelo existe no catálogo, mas nenhuma cor corresponde aos filtros informados."
+            : "Este modelo ainda não tem cores publicadas no catálogo appByte. Isso indica falta de dados na fonte, não erro no formulário.",
+      });
+    } catch (error) {
+      console.error("[automotive-colors] appByte colors failed:", error.message);
+      return NextResponse.json({
+        error: error.status === 429
+          ? "O limite de consultas gratuitas da appByte foi atingido. Aguarde um pouco e tente novamente."
+          : "Não foi possível consultar as cores na appByte neste momento. Tente novamente mais tarde.",
+      }, { status: error.status === 429 ? 503 : 502 });
+    }
+  }
 
   // Catálogo estruturado importado da planilha Silver Tintas.
   if (action === "makes") {
