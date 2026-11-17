@@ -29,8 +29,27 @@ function ResultCard({ item }) {
 
   return (
     <article style={{ border: "1px solid #e4e7f0", borderRadius: 14, padding: 16, background: "#fff", display: "flex", gap: 15, alignItems: "flex-start" }}>
-      <div style={{ width: 76, height: 76, flexShrink: 0, borderRadius: 12, background: item.color_hex || "linear-gradient(135deg,#d8dbe2,#f8f8fa)", border: "1px solid #d9dce5", display: "grid", placeItems: "center", color: "#6b7280" }}>
-        {!item.color_hex && <Palette size={23} />}
+      <div style={{ width: 116, flexShrink: 0, display: "grid", gap: 6 }}>
+        <div
+          role="img"
+          aria-label={item.color_hex ? "Amostra digital da cor " + item.color_name : "Amostra de cor indisponível"}
+          title={item.color_hex ? "Amostra digital aproximada · " + item.color_hex : "A fonte não forneceu código HEX para esta cor"}
+          style={{
+            height: 92,
+            borderRadius: 12,
+            position: "relative",
+            overflow: "hidden",
+            background: item.color_hex || "repeating-linear-gradient(135deg,#f0f1f5 0px,#f0f1f5 8px,#e2e5ec 8px,#e2e5ec 16px)",
+            border: "1px solid #cfd4df",
+            boxShadow: item.color_hex ? "inset 0 1px 2px #ffffff80, 0 3px 8px #17204a18" : "none",
+          }}
+        >
+          {item.color_hex && <span style={{ position: "absolute", inset: 0, background: "linear-gradient(145deg,#ffffff75 0%,transparent 38%,#00000018 100%)" }} />}
+          {!item.color_hex && <span style={{ position: "absolute", inset: 0, display: "grid", placeItems: "center", color: "#68728a" }}><Palette size={24} /></span>}
+        </div>
+        <span style={{ color: "#7a8296", fontSize: 10, textAlign: "center", lineHeight: 1.3 }}>
+          {item.color_hex ? "Amostra · " + item.color_hex : "Sem amostra HEX"}
+        </span>
       </div>
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ display: "flex", flexWrap: "wrap", gap: 7, alignItems: "center", marginBottom: 5 }}>
@@ -78,7 +97,16 @@ export default function ColorPage() {
     fetch("/api/automotive-colors?action=live-makes", { cache: "no-store" })
       .then(response => response.ok ? response.json() : Promise.reject(new Error("Montadoras indisponíveis")))
       .then(payload => {
-        if (active) setMakes(Array.isArray(payload.makes) ? payload.makes : [])
+        if (!active) return
+        const uniqueMakes = new Map()
+        ;(Array.isArray(payload.makes) ? payload.makes : []).forEach(item => {
+          const brand = String(item.brand || "").trim()
+          const id = String(item.id || "").trim()
+          if (!brand || !id) return
+          const key = brand.normalize("NFD").replace(/[\\u0300-\\u036f]/g, "").toLowerCase()
+          if (!uniqueMakes.has(key)) uniqueMakes.set(key, { ...item, brand })
+        })
+        setMakes([...uniqueMakes.values()].sort((a, b) => a.brand.localeCompare(b.brand, "pt-BR")))
       })
       .catch(() => { if (active) setMakes([]) })
     return () => { active = false }
@@ -245,7 +273,7 @@ export default function ColorPage() {
                 </div>
               </div>
               <p style={{ color: "#788198", fontSize: 11, margin: "10px 0 0" }}>
-                Catálogo público appByte: {makes.length || "—"} montadoras carregadas. Modelos e cores são consultados diretamente na API; a cobertura varia conforme os dados publicados.
+                Catálogo público appByte: {makes.length || "—"} montadoras reais cadastradas. A lista é deduplicada e ordenada; modelos e cores vêm da API, sem marcas ou modelos fictícios.
               </p>
               <div style={{ marginTop: 14 }}>
                 <label style={LABEL_STYLE}>Descrição ou nome da cor (opcional)</label>
@@ -343,7 +371,7 @@ export default function ColorPage() {
       <section style={{ marginTop: 18, borderRadius: 12, background: "#f1f4ff", border: "1px solid #dfe5ff", padding: 15, display: "flex", gap: 10, alignItems: "flex-start" }}>
         <Info size={18} color="#37318a" style={{ flexShrink: 0, marginTop: 1 }} />
         <p style={{ color: "#454d70", fontSize: 12, lineHeight: 1.6, margin: 0 }}>
-          A cor exibida na tela é apenas uma referência visual. Para repintura, confirme o código na etiqueta do veículo e valide a variante com a loja ou fabricante do sistema de tintas. O catálogo não fornece fórmula de mistura e não substitui leitura espectrofotométrica nem teste de aplicação.
+          A amostra visual usa o HEX fornecido pela API e é uma aproximação de tela, não uma fotografia da tinta nem uma garantia de correspondência física. Quando a API não fornece HEX, a tela informa que a amostra está indisponível em vez de inventar uma cor. Para repintura, confirme o código na etiqueta do veículo e valide a variante com o fabricante do sistema de tintas.
         </p>
       </section>
 
