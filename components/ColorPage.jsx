@@ -61,7 +61,6 @@ export default function ColorPage() {
   const [manufacturer, setManufacturer] = useState("")
   const [model, setModel] = useState("")
   const [year, setYear] = useState("")
-  const [group, setGroup] = useState("")
   const [query, setQuery] = useState("")
   const [results, setResults] = useState([])
   const [loading, setLoading] = useState(false)
@@ -87,7 +86,6 @@ export default function ColorPage() {
       if (manufacturer) params.set("manufacturer", manufacturer.trim())
       if (model) params.set("model", model.trim())
       if (year) params.set("year", year)
-      if (group) params.set("group", group)
       if (query.trim()) params.set("q", query.trim())
 
       const response = await fetch("/api/automotive-colors?" + params.toString(), { cache: "no-store" })
@@ -108,7 +106,6 @@ export default function ColorPage() {
     setManufacturer("")
     setModel("")
     setYear("")
-    setGroup("")
     setQuery("")
     setResults([])
     setError("")
@@ -164,24 +161,9 @@ export default function ColorPage() {
                   <input value={code} onChange={e => setCode(e.target.value.toUpperCase())} placeholder="Código da etiqueta do veículo" style={FIELD_STYLE} />
                 </div>}
                 <div>
-                  <label style={LABEL_STYLE}>Ano do veículo</label>
+                  <label style={LABEL_STYLE}>Ano do veículo (referência)</label>
                   <input type="number" min="1950" max="2035" value={year} onChange={e => setYear(e.target.value)} placeholder="Ex.: 2020" style={FIELD_STYLE} />
-                </div>
-                <div>
-                  <label style={LABEL_STYLE}>Grupo / família de cor</label>
-                  <select value={group} onChange={e => setGroup(e.target.value)} style={FIELD_STYLE}>
-                    <option value="">Todos os grupos</option>
-                    <option value="Branco">Branco</option>
-                    <option value="Preto">Preto</option>
-                    <option value="Prata">Prata</option>
-                    <option value="Cinza">Cinza</option>
-                    <option value="Vermelho">Vermelho</option>
-                    <option value="Azul">Azul</option>
-                    <option value="Verde">Verde</option>
-                    <option value="Amarelo">Amarelo</option>
-                    <option value="Marrom">Marrom</option>
-                    <option value="Outros">Outros</option>
-                  </select>
+                  <p style={{ color: "#788198", fontSize: 10, margin: "5px 0 0" }}>A API não confirma a cor por ano específico.</p>
                 </div>
               </div>
               <div style={{ marginTop: 14 }}>
@@ -234,7 +216,7 @@ export default function ColorPage() {
       )}
 
       <div style={{ marginTop: 20, display: "flex", alignItems: "center", justifyContent: "center", gap: 7, color: "#8a91a3", fontSize: 11 }}>
-        <CheckCircle2 size={13} /> Consulta automotiva · Catálogo público de cores automotivas
+        <CheckCircle2 size={13} /> Consulta automotiva · Catálogo público gratuito
       </div>
     </main>
   )
