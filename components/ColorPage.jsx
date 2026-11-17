@@ -60,6 +60,10 @@ export default function ColorPage() {
   const [code, setCode] = useState("")
   const [manufacturer, setManufacturer] = useState("")
   const [model, setModel] = useState("")
+  const [makeId, setMakeId] = useState("")
+  const [modelId, setModelId] = useState("")
+  const [makes, setMakes] = useState([])
+  const [models, setModels] = useState([])
   const [year, setYear] = useState("")
   const [query, setQuery] = useState("")
   const [results, setResults] = useState([])
@@ -68,6 +72,37 @@ export default function ColorPage() {
   const [error, setError] = useState("")
   const [popularVehicles, setPopularVehicles] = useState([])
   const [popularColors, setPopularColors] = useState([])
+
+  useEffect(() => {
+    let active = true
+    fetch("/api/automotive-colors?action=makes", { cache: "no-store" })
+      .then(response => response.ok ? response.json() : Promise.reject(new Error("Montadoras indisponíveis")))
+      .then(payload => {
+        if (active) setMakes(Array.isArray(payload.makes) ? payload.makes : [])
+      })
+      .catch(() => { if (active) setMakes([]) })
+    return () => { active = false }
+  }, [])
+
+  useEffect(() => {
+    if (!makeId) {
+      setModels([])
+      setModelId("")
+      return
+    }
+    let active = true
+    fetch("/api/automotive-colors?action=models&makeId=" + encodeURIComponent(makeId), { cache: "no-store" })
+      .then(response => response.ok ? response.json() : Promise.reject(new Error("Modelos indisponíveis")))
+      .then(payload => {
+        if (!active) return
+        const nextModels = Array.isArray(payload.models) ? payload.models : []
+        setModels(nextModels)
+        const selected = nextModels.find(item => item.model.toLowerCase() === model.toLowerCase())
+        setModelId(selected?.id || "")
+      })
+      .catch(() => { if (active) { setModels([]); setModelId("") } })
+    return () => { active = false }
+  }, [makeId])
 
   useEffect(() => {
     let active = true
@@ -88,8 +123,8 @@ export default function ColorPage() {
   }, [])
 
   const canSearch = useMemo(() => mode === "code"
-    ? Boolean(code.trim() && manufacturer.trim() && model.trim())
-    : Boolean(manufacturer.trim() && model.trim()), [mode, code, manufacturer, model])
+    ? Boolean(code.trim() && makeId && modelId)
+    : Boolean(makeId && modelId), [mode, code, makeId, modelId])
 
   async function handleSearch(event) {
     event?.preventDefault()
@@ -102,9 +137,10 @@ export default function ColorPage() {
 
     try {
       const params = new URLSearchParams()
+      params.set("action", "reference-colors")
+      params.set("makeId", makeId)
+      params.set("modelId", modelId)
       if (mode === "code") params.set("code", code.trim())
-      if (manufacturer) params.set("manufacturer", manufacturer.trim())
-      if (model) params.set("model", model.trim())
       if (year) params.set("year", year)
       if (query.trim()) params.set("q", query.trim())
 
@@ -125,6 +161,9 @@ export default function ColorPage() {
     setCode("")
     setManufacturer("")
     setModel("")
+    setMakeId("")
+    setModelId("")
+    setModels([])
     setYear("")
     setQuery("")
     setResults([])
@@ -170,11 +209,27 @@ export default function ColorPage() {
               <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(190px,1fr))", gap: 14 }}>
                 <div>
                   <label style={LABEL_STYLE}>Montadora</label>
-                  <input value={manufacturer} onChange={e => setManufacturer(e.target.value)} placeholder="Ex.: Toyota, Honda, VW" style={FIELD_STYLE} />
+                  <select value={makeId} onChange={e => {
+                    const selected = makes.find(item => item.id === e.target.value)
+                    setMakeId(e.target.value)
+                    setManufacturer(selected?.brand || "")
+                    setModel("")
+                    setModelId("")
+                  }} style={FIELD_STYLE}>
+                    <option value="">Selecione a montadora</option>
+                    {makes.map(item => <option key={item.id} value={item.id}>{item.brand} · {item.country}</option>)}
+                  </select>
                 </div>
                 <div>
                   <label style={LABEL_STYLE}>Modelo</label>
-                  <input value={model} onChange={e => setModel(e.target.value)} placeholder="Ex.: Corolla, Civic, Onix" style={FIELD_STYLE} />
+                  <select value={modelId} disabled={!makeId || models.length === 0} onChange={e => {
+                    const selected = models.find(item => item.id === e.target.value)
+                    setModelId(e.target.value)
+                    setModel(selected?.model || "")
+                  }} style={{ ...FIELD_STYLE, opacity: makeId ? 1 : .65 }}>
+                    <option value="">{makeId ? "Selecione o modelo" : "Escolha uma montadora primeiro"}</option>
+                    {models.map(item => <option key={item.id} value={item.id}>{item.model}{item.segment ? " · " + item.segment : ""}</option>)}
+                  </select>
                 </div>
                 {mode === "code" && <div>
                   <label style={LABEL_STYLE}>Código da cor / código OEM</label>
@@ -218,8 +273,11 @@ export default function ColorPage() {
               <button key={vehicle.manufacturer + vehicle.model} type="button"
                 onClick={() => {
                   setMode("vehicle")
+                  const selectedMake = makes.find(item => item.brand.toLowerCase() === vehicle.manufacturer.toLowerCase())
+                  setMakeId(selectedMake?.id || "")
                   setManufacturer(vehicle.manufacturer)
                   setModel(vehicle.model)
+                  setModelId("")
                   setCode("")
                   setQuery("")
                   setYear("")
@@ -250,8 +308,11 @@ export default function ColorPage() {
               <button key={color.source_color_id} type="button"
                 onClick={() => {
                   setMode("vehicle")
+                  const selectedMake = makes.find(item => item.brand.toLowerCase() === color.manufacturer.toLowerCase())
+                  setMakeId(selectedMake?.id || "")
                   setManufacturer(color.manufacturer)
                   setModel(color.model)
+                  setModelId("")
                   setQuery(color.color_name)
                   setCode("")
                   setYear("")
