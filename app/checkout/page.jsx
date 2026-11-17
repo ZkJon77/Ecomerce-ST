@@ -137,13 +137,21 @@ export default function CheckoutPage() {
       const data = await response.json();
 
       if (data.ok) {
-        if (data.init_point) {
-          localStorage.removeItem("silver-cart");
-          localStorage.removeItem("cart");
-          window.location.href = data.init_point;
-        } else {
-          alert("Erro: Link de pagamento não recebido.");
+        localStorage.removeItem("silver-cart");
+        localStorage.removeItem("cart");
+
+        if (data.checkout_url) {
+          window.location.href = data.checkout_url;
+          return;
         }
+
+        setPaymentResult({
+          orderId: data.orderId,
+          paymentMethod,
+          qr_code: data.qr_code,
+          copyPaste: data.copyPaste,
+          ticket_url: data.ticket_url,
+        });
       } else {
         alert("Erro ao processar pagamento: " + (data.error || "Erro desconhecido"));
       }
@@ -163,8 +171,8 @@ export default function CheckoutPage() {
             <div style={{ width: 64, height: 64, borderRadius: "50%", background: "#dcfce7", color: "#16a34a", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 20px" }}>
               <CheckCircle2 size={32} />
             </div>
-            <h1 style={{ fontSize: 24, fontWeight: 800, color: "#1a1464", marginBottom: 8 }}>Pagamento Processado</h1>
-            <p style={{ fontSize: 14, color: "#666", marginBottom: 24 }}>Seu pedido foi registrado. Finalize o pagamento abaixo:</p>
+            <h1 style={{ fontSize: 24, fontWeight: 800, color: "#1a1464", marginBottom: 8 }}>Pedido registrado</h1>
+            <p style={{ fontSize: 14, color: "#666", marginBottom: 24 }}>Seu pedido foi registrado. Use os dados abaixo para concluir o pagamento:</p>
 
             <div style={{ background: "#f9fafb", borderRadius: "8px", padding: "20px", textAlign: "left", border: "1px solid #e5e7eb", marginBottom: 24 }}>
               <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8, fontSize: 13 }}>
@@ -185,7 +193,7 @@ export default function CheckoutPage() {
               <div style={{ textAlign: "center", marginBottom: 24 }}>
                 <div style={{ fontSize: 14, fontWeight: "700", color: "#1a1464", marginBottom: 12 }}>Escaneie o QR Code para pagar:</div>
                 <img src={paymentResult.qr_code} alt="Pix QR Code" style={{ width: 200, height: 200, margin: "0 auto 16px", background: "white", padding: 8, border: "1px solid #ddd" }} />
-                <div style={{ fontSize: 12, color: "#666", marginBottom: 8 }}>Ou copie a chave Pix:</div>
+                <div style={{ fontSize: 12, color: "#666", marginBottom: 8 }}>Ou copie o código Pix (copia e cola):</div>
                 <div style={{ background: "#f3f4f6", padding: "10px", borderRadius: "8px", fontSize: "11px", fontWeight: "600", color: "#444", border: "1px dashed #ccc", overflowX: "auto", whiteSpace: "nowrap" }}>
                   {paymentResult.copyPaste || "Aguardando link..."}
                 </div>
@@ -194,7 +202,7 @@ export default function CheckoutPage() {
 
             {paymentResult.ticket_url && (
               <div style={{ textAlign: "center", marginBottom: 24 }}>
-                <div style={{ fontSize: 14, fontWeight: "700", color: "#1a1464", marginBottom: 12 }}>Seu boleto/pagamento está pronto:</div>
+                <div style={{ fontSize: 14, fontWeight: "700", color: "#1a1464", marginBottom: 12 }}>Seu boleto está pronto:</div>
                 <a href={paymentResult.ticket_url} target="_blank" rel="noreferrer"
                   style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, background: "#1a1464", color: "white", textDecoration: "none", padding: "14px 24px", borderRadius: "8px", fontWeight: "700", fontSize: "14px" }}>
                   <FileText size={18} /> Acessar Pagamento
