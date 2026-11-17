@@ -75,7 +75,7 @@ export default function ColorPage() {
 
   useEffect(() => {
     let active = true
-    fetch("/api/automotive-colors?action=makes", { cache: "no-store" })
+    fetch("/api/automotive-colors?action=live-makes", { cache: "no-store" })
       .then(response => response.ok ? response.json() : Promise.reject(new Error("Montadoras indisponíveis")))
       .then(payload => {
         if (active) setMakes(Array.isArray(payload.makes) ? payload.makes : [])
@@ -91,7 +91,7 @@ export default function ColorPage() {
       return
     }
     let active = true
-    fetch("/api/automotive-colors?action=models&makeId=" + encodeURIComponent(makeId), { cache: "no-store" })
+    fetch("/api/automotive-colors?action=live-models&makeId=" + encodeURIComponent(makeId), { cache: "no-store" })
       .then(response => response.ok ? response.json() : Promise.reject(new Error("Modelos indisponíveis")))
       .then(payload => {
         if (!active) return
@@ -140,7 +140,7 @@ export default function ColorPage() {
 
     try {
       const params = new URLSearchParams()
-      params.set("action", "reference-colors")
+      params.set("action", "live-colors")
       params.set("makeId", makeId)
       params.set("modelId", modelId)
       if (mode === "code") params.set("code", code.trim())
@@ -245,7 +245,7 @@ export default function ColorPage() {
                 </div>
               </div>
               <p style={{ color: "#788198", fontSize: 11, margin: "10px 0 0" }}>
-                Catálogo importado da planilha: {makes.length || "—"} montadoras · 953 modelos · 568 referências de cor. Os códigos OEM só aparecem quando foram informados na planilha.
+                Catálogo público appByte: {makes.length || "—"} montadoras carregadas. Modelos e cores são consultados diretamente na API; a cobertura varia conforme os dados publicados.
               </p>
               <div style={{ marginTop: 14 }}>
                 <label style={LABEL_STYLE}>Descrição ou nome da cor (opcional)</label>
@@ -372,7 +372,7 @@ export default function ColorPage() {
       )}
 
       <div style={{ marginTop: 20, display: "flex", alignItems: "center", justifyContent: "center", gap: 7, color: "#8a91a3", fontSize: 11 }}>
-        <CheckCircle2 size={13} /> Consulta automotiva · Catálogo público gratuito
+        <CheckCircle2 size={13} /> Consulta automotiva · API pública appByte
       </div>
     </main>
   )
