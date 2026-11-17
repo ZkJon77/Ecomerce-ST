@@ -50,18 +50,47 @@ export async function POST(req) {
       return NextResponse.json({ error: 'Forma de pagamento inválida' }, { status: 400 });
     }
 
-    const catalog = new Map([...PRODUCTS, ...KITS].map((product) => [String(product.id), product]));
+    // Resolve produtos pelo banco primeiro: o catálogo do site usa UUIDs do Supabase.
+    // Mantém o catálogo local apenas para itens antigos que ainda usam IDs legados.
+    const requestedIds = [...new Set(cart.map((item) => String(item?.id ?? '')))];
+    const databaseIds = requestedIds.filter((id) => /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(id));
+    const databaseCatalog = new Map();
+
+    if (databaseIds.length) {
+      const { data: databaseProducts, error: productsError } = await supabaseAdmin
+        .from('products')
+        .select('id,name,price')
+        .in('id', databaseIds);
+      if (productsError) {
+        console.error('Checkout product lookup failed:', {
+          code: productsError.code,
+          message: productsError.message,
+          details: productsError.details,
+          hint: productsError.hint,
+        });
+        return NextResponse.json({ error: 'Não foi possível validar os produtos do carrinho. Tente novamente.' }, { status: 503 });
+      }
+      for (const product of databaseProducts || []) databaseCatalog.set(String(product.id), product);
+    }
+
+    const legacyCatalog = new Map([...PRODUCTS, ...KITS].map((product) => [String(product.id), product]));
     const verifiedCart = [];
     for (const item of cart) {
-      const product = item && catalog.get(String(item.id));
+      const id = String(item?.id ?? '');
       const quantity = Number(item?.qty);
+      const product = databaseCatalog.get(id) || legacyCatalog.get(id);
       if (!product || !Number.isInteger(quantity) || quantity < 1 || quantity > 99) {
-        return NextResponse.json({ error: 'O carrinho contém um produto ou quantidade inválida. Atualize a página e tente novamente.' }, { status: 400 });
+        return NextResponse.json({ error: 'O carrinho contém um produto indisponível ou quantidade inválida. Atualize a página e tente novamente.' }, { status: 400 });
+      }
+      const price = Number(product.price);
+      if (!Number.isFinite(price) || price < 0) {
+        return NextResponse.json({ error: 'O preço de um produto está inválido. Atualize o catálogo e tente novamente.' }, { status: 400 });
       }
       verifiedCart.push({
-        id: String(product.id),
+        id,
+        productId: databaseCatalog.has(id) ? id : null,
         name: product.name,
-        price: Number(product.price),
+        price,
         qty: quantity,
       });
     }
@@ -105,7 +134,7 @@ export async function POST(req) {
 
       const orderItems = verifiedCart.map((item) => ({
         order_id: order.id,
-        product_id: /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(item.id) ? item.id : null,
+        product_id: item.productId,
         product_name: item.name,
         quantity: item.qty,
         price: item.price,
@@ -114,7 +143,7 @@ export async function POST(req) {
       const { error: itemsError } = await supabaseAdmin.from('order_items').insert(orderItems);
       if (itemsError) throw itemsError;
     } catch (dbError) {
-      console.error('Failed to save checkout order:', dbError);
+      console.error('Failed to save checkout order:', {\n        code: dbError?.code,\n        message: dbError?.message || String(dbError),\n        details: dbError?.details,\n        hint: dbError?.hint,\n        orderId,\n      });
       throw new Error('Não foi possível registrar o pedido. Verifique a configuração do Supabase.');
     }
 
