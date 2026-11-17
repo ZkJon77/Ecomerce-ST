@@ -7,7 +7,6 @@ nextEnv.loadEnvConfig(process.cwd())
 const requiredVariables = [
   "NEXT_PUBLIC_SUPABASE_URL",
   "NEXT_PUBLIC_SUPABASE_ANON_KEY",
-  "SUPABASE_SERVICE_ROLE_KEY",
   "MP_ACCESS_TOKEN",
 ]
 
@@ -18,6 +17,13 @@ for (const name of requiredVariables) {
   console.log(`${configured ? "OK" : "FALTA"} ${name}`)
   if (!configured) missingVariables = true
 }
+
+const hasAdminSupabaseKey = Boolean(
+  process.env.SUPABASE_SECRET_KEY?.trim() ||
+  process.env.SUPABASE_SERVICE_ROLE_KEY?.trim()
+)
+console.log(`${hasAdminSupabaseKey ? "OK" : "FALTA"} SUPABASE_SECRET_KEY ou SUPABASE_SERVICE_ROLE_KEY`)
+if (!hasAdminSupabaseKey) missingVariables = true
 
 const appUrl = process.env.NEXT_PUBLIC_APP_URL?.trim()
 if (!appUrl) {
