@@ -103,7 +103,7 @@ export default function ColorPage() {
           const brand = String(item.brand || "").trim()
           const id = String(item.id || "").trim()
           if (!brand || !id) return
-          const key = brand.normalize("NFD").replace(/[\\u0300-\\u036f]/g, "").toLowerCase()
+          const key = brand.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase()
           if (!uniqueMakes.has(key)) uniqueMakes.set(key, { ...item, brand })
         })
         setMakes([...uniqueMakes.values()].sort((a, b) => a.brand.localeCompare(b.brand, "pt-BR")))
