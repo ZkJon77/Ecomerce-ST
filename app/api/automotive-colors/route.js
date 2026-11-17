@@ -177,6 +177,7 @@ export async function GET(request) {
   }
 
   if (action === "models") {
+    if (!hasSupabaseAdminConfig) return NextResponse.json({ error: "Catálogo indisponível: configure a conexão administrativa do Supabase." }, { status: 503 });
     const makeId = (params.get("makeId") || "").trim();
     if (!makeId) return NextResponse.json({ error: "Selecione uma montadora." }, { status: 400 });
     const { data, error } = await supabaseAdmin
