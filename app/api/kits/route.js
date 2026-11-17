@@ -18,7 +18,7 @@ export async function GET() {
       .from('products')
       .select(`
         id, name, price, image_url, description,
-        kit_items(quantity, product:products!kit_items_product_id_fkey(name, price))
+        kit_items!kit_items_kit_id_fkey(quantity, product:products!kit_items_product_id_fkey(name, price))
       `)
       .eq('category_id', categories.id);
 
