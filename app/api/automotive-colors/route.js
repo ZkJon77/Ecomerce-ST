@@ -158,6 +158,128 @@ async function readCachedColors(makeName, modelName, code, query, year) {
 
 export async function GET(request) {
   const params = new URL(request.url).searchParams;
+  const action = params.get("action");
+
+  // Catálogo estruturado importado da planilha Silver Tintas.
+  if (action === "makes") {
+    if (!hasSupabaseAdminConfig) {
+      return NextResponse.json({ error: "Catálogo indisponível: configure a conexão administrativa do Supabase." }, { status: 503 });
+    }
+    const { data, error } = await supabaseAdmin
+      .from("automotive_reference_makes")
+      .select("id,group_name,brand,country,models_count,colors_count")
+      .order("brand");
+    if (error) {
+      console.error("[automotive-colors] Reference makes failed:", error.message);
+      return NextResponse.json({ error: "Não foi possível carregar as montadoras." }, { status: 500 });
+    }
+    return NextResponse.json({ makes: data || [], count: data?.length || 0, source: "Planilha de referência Silver Tintas" });
+  }
+
+  if (action === "models") {
+    const makeId = (params.get("makeId") || "").trim();
+    if (!makeId) return NextResponse.json({ error: "Selecione uma montadora." }, { status: 400 });
+    const { data, error } = await supabaseAdmin
+      .from("automotive_reference_models")
+      .select("id,model,segment")
+      .eq("make_id", makeId)
+      .order("model");
+    if (error) {
+      console.error("[automotive-colors] Reference models failed:", error.message);
+      return NextResponse.json({ error: "Não foi possível carregar os modelos." }, { status: 500 });
+    }
+    return NextResponse.json({ models: data || [], count: data?.length || 0 });
+  }
+
+  if (action === "reference-colors") {
+    const makeId = (params.get("makeId") || "").trim();
+    const modelId = (params.get("modelId") || "").trim();
+    const code = (params.get("code") || "").trim().slice(0, 60);
+    const query = (params.get("q") || "").trim().slice(0, 100);
+    const yearValue = (params.get("year") || "").trim();
+    const year = yearValue ? Number(yearValue) : null;
+    if (!makeId || !modelId) {
+      return NextResponse.json({ error: "Selecione a montadora e o modelo." }, { status: 400 });
+    }
+    if (yearValue && (!Number.isInteger(year) || year < 1950 || year > 2035)) {
+      return NextResponse.json({ error: "Informe um ano válido para o veículo." }, { status: 400 });
+    }
+    const { data: modelRecord, error: modelError } = await supabaseAdmin
+      .from("automotive_reference_models")
+      .select("id,make_id,model,segment")
+      .eq("id", modelId)
+      .eq("make_id", makeId)
+      .maybeSingle();
+    if (modelError || !modelRecord) {
+      return NextResponse.json({ error: "O modelo selecionado não pertence à montadora informada." }, { status: 400 });
+    }
+    const { data: makeRecord, error: makeError } = await supabaseAdmin
+      .from("automotive_reference_makes")
+      .select("id,brand")
+      .eq("id", makeId)
+      .maybeSingle();
+    if (makeError || !makeRecord) {
+      return NextResponse.json({ error: "Montadora não encontrada no catálogo." }, { status: 404 });
+    }
+    const { data: links, error: linksError } = await supabaseAdmin
+      .from("automotive_reference_model_colors")
+      .select("color_id")
+      .eq("model_id", modelId);
+    if (linksError) {
+      console.error("[automotive-colors] Reference links failed:", linksError.message);
+      return NextResponse.json({ error: "Não foi possível consultar as cores deste modelo." }, { status: 500 });
+    }
+    const colorIds = (links || []).map((item) => item.color_id);
+    if (!colorIds.length) {
+      return NextResponse.json({ results: [], count: 0, source: "Planilha de referência Silver Tintas", notice: "Não há cores relacionadas a este modelo na planilha." });
+    }
+    const { data: colorRows, error: colorError } = await supabaseAdmin
+      .from("automotive_reference_colors")
+      .select("id,color_name,color_family,original_name,factory_code,data_confidence")
+      .eq("make_id", makeId)
+      .in("id", colorIds)
+      .order("color_name");
+    if (colorError) {
+      console.error("[automotive-colors] Reference colors failed:", colorError.message);
+      return NextResponse.json({ error: "Não foi possível carregar as cores." }, { status: 500 });
+    }
+    let filtered = colorRows || [];
+    if (code) {
+      const normalized = code.toLowerCase();
+      filtered = filtered.filter((item) => (item.factory_code || "").toLowerCase().includes(normalized));
+    } else if (query) {
+      const normalized = query.toLowerCase();
+      filtered = filtered.filter((item) =>
+        [item.color_name, item.original_name, item.factory_code, item.color_family]
+          .some((value) => (value || "").toLowerCase().includes(normalized))
+      );
+    }
+    const results = filtered.slice(0, MAX_RESULTS).map((item) => ({
+      id: item.id,
+      source_reference: item.id,
+      manufacturer: makeRecord.brand,
+      model: modelRecord.model,
+      year_start: null,
+      year_end: null,
+      color_code: item.factory_code || "Código não informado",
+      color_name: item.color_name,
+      color_group: item.color_family || null,
+      color_hex: null,
+      finish: null,
+      paint_system: null,
+      notes: item.data_confidence || "Referência não validada pelo fabricante.",
+      source_name: "Planilha de referência Silver Tintas",
+      verified_at: null,
+    }));
+    await recordColorSearches(results, makeRecord.brand, modelRecord.model);
+    return NextResponse.json({
+      results,
+      count: results.length,
+      source: "Planilha de referência Silver Tintas",
+      notice: "A planilha contém nomes de referência e associações por montadora/modelo, mas a maioria dos registros ainda não foi conferida em catálogo oficial. Códigos ausentes não foram inventados. A aplicação por ano/versão deve ser confirmada na etiqueta do veículo.",
+      confidence: "reference_unverified",
+    });
+  }
 
   if (params.get("popular") === "1") {
     if (!hasSupabaseAdminConfig) {
