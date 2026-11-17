@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { MercadoPagoConfig, Payment, WebhookSignatureValidator } from 'mercadopago';
 import { hasSupabaseAdminConfig, supabaseAdmin } from '@/lib/supabase-admin';
+import { sendOrderNotification } from '@/lib/whatsapp';
 
 function cents(value) {
   return Math.round(Number(value) * 100);
@@ -73,7 +74,7 @@ export async function POST(req) {
 
     const { data: order, error: orderError } = await supabaseAdmin
       .from('orders')
-      .select('id,total_amount,status')
+      .select('id,total_amount,status,customer_name,customer_email,customer_phone,customer_address,store_notified_at')
       .eq('id', orderId)
       .single();
 
@@ -109,6 +110,64 @@ export async function POST(req) {
     if (updateError) {
       console.error('Falha ao atualizar o pedido:', updateError);
       return NextResponse.json({ error: 'Não foi possível atualizar o pedido.' }, { status: 500 });
+    }
+
+    // A loja só recebe o pedido para preparação depois da confirmação real do pagamento.
+    // A reivindicação temporária reduz notificações duplicadas em reenvios do webhook.
+    if (finalStatus === 'approved' && !order.store_notified_at) {
+      const staleClaim = new Date(Date.now() - 10 * 60 * 1000).toISOString();
+      const { data: claim, error: claimError } = await supabaseAdmin
+        .from('orders')
+        .update({ store_notification_claimed_at: new Date().toISOString() })
+        .eq('id', orderId)
+        .is('store_notified_at', null)
+        .or('store_notification_claimed_at.is.null,store_notification_claimed_at.lt.' + staleClaim)
+        .select('id')
+        .maybeSingle();
+
+      if (claimError) {
+        console.error('Não foi possível reservar o aviso do pedido:', claimError);
+      } else if (claim) {
+        const { data: items, error: itemsError } = await supabaseAdmin
+          .from('order_items')
+          .select('product_name,quantity,price')
+          .eq('order_id', orderId);
+
+        if (itemsError) {
+          console.error('Não foi possível carregar os itens para avisar a loja:', itemsError);
+        } else {
+          const notification = await sendOrderNotification({
+            orderId,
+            name: order.customer_name,
+            email: order.customer_email,
+            phone: order.customer_phone,
+            address: order.customer_address,
+            total: Number(order.total_amount),
+            paymentMethod: payment.payment_type_id || payment.payment_method_id || 'Mercado Pago',
+          }, (items || []).map(item => ({
+            name: item.product_name,
+            qty: item.quantity,
+            price: Number(item.price),
+          })));
+
+          if (notification?.ok) {
+            const { error: notifiedError } = await supabaseAdmin
+              .from('orders')
+              .update({
+                store_notified_at: new Date().toISOString(),
+                store_notification_claimed_at: null,
+              })
+              .eq('id', orderId);
+            if (notifiedError) console.error('Pedido avisado, mas não foi possível registrar o aviso:', notifiedError);
+          } else {
+            await supabaseAdmin
+              .from('orders')
+              .update({ store_notification_claimed_at: null })
+              .eq('id', orderId);
+            console.warn('Pedido aprovado, mas o aviso à loja não foi enviado. Verifique WHATSAPP_API_URL e STORE_PHONE.');
+          }
+        }
+      }
     }
 
     return NextResponse.json({ ok: true }, { status: 200 });
