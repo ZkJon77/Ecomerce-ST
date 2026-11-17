@@ -293,42 +293,10 @@ export default function ColorPage() {
         </form>
       </section>
 
-      <section style={{ marginTop: 24, padding: "22px clamp(16px,3vw,24px)", background: "#f7f8fc", border: "1px solid #e5e8f1", borderRadius: 16 }}>
-        <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "space-between", gap: 8, alignItems: "end", marginBottom: 14 }}>
-          <div>
-            <h2 style={{ color: "#171d45", fontSize: 19, margin: 0 }}>Veículos em destaque no Brasil</h2>
-            <p style={{ color: "#69738a", fontSize: 12, margin: "5px 0 0" }}>Seleção baseada no ranking Fenabrave de outubro de 2026. Escolha um modelo para consultar as cores disponíveis.</p>
-          </div>
-          <span style={{ fontSize: 10, color: "#7c8498" }}>Fonte: Fenabrave</span>
-        </div>
-        {popularVehicles.length > 0 ? (
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(145px,1fr))", gap: 9 }}>
-            {popularVehicles.map((vehicle) => (
-              <button key={vehicle.manufacturer + vehicle.model} type="button"
-                onClick={() => {
-                  setMode("vehicle")
-                  const selectedMake = makes.find(item => item.brand.toLowerCase() === vehicle.manufacturer.toLowerCase())
-                  setMakeId(selectedMake?.id || "")
-                  setManufacturer(vehicle.manufacturer)
-                  setModel(vehicle.model)
-                  setModelId("")
-                  setCode("")
-                  setQuery("")
-                  setYear("")
-                  setResults([])
-                  setError("")
-                  setSearched(false)
-                }}
-                style={{ textAlign: "left", padding: "12px 13px", border: "1px solid #e0e4ef", borderRadius: 10, background: "#fff", cursor: "pointer" }}>
-                <span style={{ display: "block", color: "#777f95", fontSize: 10, fontWeight: 800 }}>#{vehicle.sales_rank} · {vehicle.manufacturer}</span>
-                <strong style={{ display: "block", color: "#20265a", fontSize: 13, marginTop: 4 }}>{vehicle.model}</strong>
-                <span style={{ display: "block", color: "#6b7390", fontSize: 10, marginTop: 7 }}>Selecionar veículo →</span>
-              </button>
-            ))}
-          </div>
-        ) : (
-          <p style={{ margin: 0, color: "#69738a", fontSize: 12 }}>Os destaques serão exibidos assim que o serviço de consulta estiver disponível.</p>
-        )}
+      <section style={{ marginTop: 20, padding: "14px 16px", background: "#f7f8fc", border: "1px solid #e5e8f1", borderRadius: 12 }}>
+        <p style={{ margin: 0, color: "#59647d", fontSize: 12, lineHeight: 1.6 }}>
+          As montadoras e os modelos são carregados do catálogo público de veículos aprovados. A consulta não cria nomes de carros por conta própria; modelos sem cadastro na fonte não aparecem na lista.
+        </p>
       </section>
 
       <section style={{ marginTop: 18, padding: "22px clamp(16px,3vw,24px)", background: "#fff", border: "1px solid #e5e8f1", borderRadius: 16 }}>
