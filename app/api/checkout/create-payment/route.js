@@ -5,19 +5,22 @@ import { KITS, PRODUCTS } from '../../../../lib/constants';
 
 function getPublicBaseUrl() {
   const configuredUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_SITE_URL;
-  const vercelUrl = process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null;
-  const candidates = [configuredUrl, vercelUrl, 'https://ecomerce-st.vercel.app'];
-
-  for (const value of candidates) {
-    if (!value) continue;
-    try {
-      const url = new URL(value);
-      if (url.protocol === 'https:' && !['localhost', '127.0.0.1'].includes(url.hostname)) return url.origin;
-    } catch {
-      // Tenta a próxima URL conhecida.
-    }
+  if (!configuredUrl) {
+    throw new Error('Configure NEXT_PUBLIC_APP_URL com a URL pública do site publicado.');
   }
-  return 'https://ecomerce-st.vercel.app';
+
+  let url;
+  try {
+    url = new URL(configuredUrl.trim());
+  } catch {
+    throw new Error('NEXT_PUBLIC_APP_URL precisa ser uma URL válida.');
+  }
+
+  if (url.protocol !== 'https:' && !['localhost', '127.0.0.1'].includes(url.hostname)) {
+    throw new Error('A URL pública do checkout precisa usar HTTPS.');
+  }
+
+  return url.origin;
 }
 
 export async function POST(req) {
@@ -112,6 +115,7 @@ export async function POST(req) {
     }
 
     const amount = verifiedCart.reduce((sum, item) => sum + item.price * item.qty, 0);
+    // Valida a URL pública antes de criar o pedido para nunca gerar retornos/webhooks apontando ao Vercel antigo.
     const baseUrl = getPublicBaseUrl();
     checkoutStage = 'order_insert';
 
