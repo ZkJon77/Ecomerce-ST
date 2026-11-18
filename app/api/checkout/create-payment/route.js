@@ -5,8 +5,10 @@ import { KITS, PRODUCTS } from '../../../../lib/constants';
 
 function getPublicBaseUrl() {
   const configuredUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_SITE_URL;
+  // URL (produção) e DEPLOY_PRIME_URL (previews) são definidos automaticamente pelo Netlify.
+  const netlifyUrl = process.env.CONTEXT === 'production' ? process.env.URL : process.env.DEPLOY_PRIME_URL || process.env.URL;
   const vercelUrl = process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : null;
-  const candidates = [configuredUrl, vercelUrl, 'https://ecomerce-st.vercel.app'];
+  const candidates = [configuredUrl, netlifyUrl, vercelUrl, 'https://ecomerce-st.netlify.app'];
 
   for (const value of candidates) {
     if (!value) continue;
@@ -17,7 +19,7 @@ function getPublicBaseUrl() {
       // Tenta a próxima URL conhecida.
     }
   }
-  return 'https://ecomerce-st.vercel.app';
+  return 'https://ecomerce-st.netlify.app';
 }
 
 export async function POST(req) {
