@@ -5,7 +5,7 @@ const StoreBanner = () => (
   <div style={{ display: "flex", background: "#f7f8fc", overflow: "hidden", flexWrap: "wrap" }}>
     <div style={{ flex: "1 1 50%", minWidth: 0, minHeight: 180, background: "#1a88d4", position: "relative", overflow: "hidden" }}>
       <img
-        src="/img/fachada-silver.webp"
+        src="https://lh3.googleusercontent.com/gps-cs-s/ANWiy9TVdNibtA1qlziOKcey0LC3PqtGRpckoXyBcm-MSe_vGMNkO8I5O5meEm1YFsNBmT_XJ0sP5FbP1kwuhkiOA3V-3Y_vFLUdomG-xcNLKRlw0heBExzVZyodHM6ouAYXXdslZNc=s680-w680-h510-rw"
         alt="Fachada da loja física Silver Tintas em Campinas"
         style={{ display: "block", width: "100%", height: "100%", minHeight: 180, objectFit: "cover", objectPosition: "center" }}
       />
