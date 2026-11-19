@@ -4,14 +4,21 @@ import { hasSupabaseAdminConfig, supabaseAdmin } from '../../../../lib/supabase-
 import { KITS, PRODUCTS } from '../../../../lib/constants';
 
 function getPublicBaseUrl() {
-  const configuredUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_SITE_URL;
+  // Preferência por URL configurada; em Vercel, usa as URLs do ambiente como fallback.
+  const configuredUrl =
+    process.env.NEXT_PUBLIC_APP_URL ||
+    process.env.NEXT_PUBLIC_SITE_URL ||
+    process.env.VERCEL_PROJECT_PRODUCTION_URL ||
+    process.env.VERCEL_URL;
+
   if (!configuredUrl) {
     throw new Error('Configure NEXT_PUBLIC_APP_URL com a URL pública do site publicado.');
   }
 
+  const value = configuredUrl.trim();
   let url;
   try {
-    url = new URL(configuredUrl.trim());
+    url = new URL(value.startsWith('http://') || value.startsWith('https://') ? value : `https://${value}`);
   } catch {
     throw new Error('NEXT_PUBLIC_APP_URL precisa ser uma URL válida.');
   }
